@@ -24,11 +24,13 @@ public class CodePanel {
 	private float currentScaleX;
 	private float currentScaley;
 	
+	int scrollOffset = 0;
+	
 	DrawableClass compileResult;
 	
 	public CompileState state = CompileState.STATE_DIRTY;
 	
-	PFont font;
+	PFont font; 	
 	Object lock = new Object();
 	PGraphics pGfx;
 	private int panelId;
@@ -69,7 +71,11 @@ public class CodePanel {
 		pGfx.noStroke();
 		pGfx.textFont(font, 15);
 		pGfx.pushMatrix();
-		float tY = pGfx.height / (float)codeHeight;
+//		if(codeHeight > 900){
+//			codeHeight = 900;
+//			
+//		}
+		float tY = pGfx.height / ((float)codeHeight + 50.0f);
 		float tX = pGfx.width / (maxWidth + 50);
 		
 		if(tX > tY){
@@ -80,7 +86,13 @@ public class CodePanel {
 		}
 		int ct = 40;
 		maxWidth = 0;
-		
+		if(cursorY - scrollOffset > 30){
+			scrollOffset = cursorY - 30;
+		} else if (cursorY - scrollOffset < 5){
+			scrollOffset = cursorY -5 ;
+			
+		}
+		//pGfx.translate(0, -scrollOffset * 20);
 		synchronized(lock){
 			for(int i = 0; i < lines.size(); i++){
 				
@@ -89,6 +101,7 @@ public class CodePanel {
 				if(w > maxWidth){
 					maxWidth = w;
 				}
+				
 				pGfx.fill(0,0,0,80);
 				pGfx.rect(10, ct - 14, w + 15, 20);
 				//tint the text slightly red if the panel needs compiling
@@ -226,6 +239,9 @@ public class CodePanel {
 	private void newLine() {
 		StringBuffer l = lines.get(cursorY);
 		String end = l.substring(cursorX);
+		if(end.length() == 0){
+			end = " ";
+		}
 		synchronized (lock) {
 
 
@@ -251,6 +267,7 @@ public class CodePanel {
 				cursorX = 0;
 			}
 		}
+			
 	}
 
 	private void moveRight(int mod) {
@@ -276,6 +293,8 @@ public class CodePanel {
 				cursorX = 0;
 			}
 		}
+		
+		
 	}
 
 	private void moveLeft(int mod) {
@@ -295,9 +314,12 @@ public class CodePanel {
 			StringBuffer l = lines.get(cursorY);
 			if(cursorX > 0){
 
-
-				l.deleteCharAt(cursorX-1);
-				cursorX--;
+//				if(cursorX-1 > 0){
+					if(l.length() > 0){
+						l.deleteCharAt(cursorX-1);
+					}
+					cursorX--;
+//				}
 			} else {
 				//backspace to end of prev line
 				synchronized (lock) {

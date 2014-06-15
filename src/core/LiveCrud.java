@@ -94,6 +94,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 				rect(ct*10 + 5, 20, 5,10);
 			}
 			ct++;
+			
 		}
 
 		//draw the beat marker
