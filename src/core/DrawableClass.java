@@ -1,10 +1,12 @@
 package core;
-import processing.core.PApplet;
+import ddf.minim.analysis.FFT;
 
 
 public abstract class DrawableClass {
 	boolean ready = false;
-	protected PApplet p;
+	protected LiveCrud p;
+	protected FFT fft;
+	
 	protected abstract void draw();
 	//called by main loop, only call draw if p has been set
 	public void preDraw(){
@@ -19,9 +21,10 @@ public abstract class DrawableClass {
 		
 	}
 	
-	public void setPApplet(PApplet p){
+	public void setPApplet(LiveCrud p){
 		System.out.println("set p");
 		this.p = p;
+		this.fft = p.fft;
 		ready = true;
 		setup();
 	}

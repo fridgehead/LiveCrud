@@ -1,23 +1,40 @@
 package compiler;
 import java.util.ArrayList;
 
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
+import javax.tools.DiagnosticListener;
+import javax.tools.FileObject;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileManager;
+import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
 
 
-public class LiveCompiler {
+public class LiveCompiler{
 	
 	JavaSourceFromString source;
 	int count = 0;
 	
+	String[] template = {"public class DynClass extends DrawableClass{\r\n", "import core.*;\r\nimport processing.core.*;\r\n"};
+	
+	
 	public LiveCompiler(){}
 	
-	public Object compile(StringBuilder  s) throws InstantiationException, IllegalAccessException, ClassNotFoundException{
+	public Object compile(StringBuilder  s) throws InstantiationException, IllegalAccessException, ClassNotFoundException, FuckedSourceException{
 		String fullName = "DynClass";
+		//whilst scanning the strings look for an odd number of pushmatrix and popmatrix strings. Fail if they arent even
+		int pushCount = findCounts("p.pushMatrix()", s.toString());
+		int popCount = findCounts("p.popMatrix()", s.toString());
+		if(pushCount != popCount){
+			System.out.println("push and pop dont match");
+			return null;
+		}
+		
 		//insert the headers to make this a proper class
-		s.insert(0, "public class DynClass extends DrawableClass{\r\n");
-		s.insert(0, "import core.*;\r\nimport processing.core.*;\r\n;");
+		for(int i = 0; i < template.length; i++){
+			s.insert(0, template[i]);
+		}
 		s.append("}");
 		
 		
@@ -43,11 +60,20 @@ public class LiveCompiler {
         ArrayList<JavaSourceFromString> jfiles = new ArrayList<JavaSourceFromString>();
         jfiles.add(new JavaSourceFromString(fullName, s	));
 
+        //set up a diagnostic capture
+        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<JavaFileObject>();
+        
+        
         // We specify a task to the compiler. Compiler should use our file
         // manager and our list of "files".
         // Then we run the compilation with call()
-        compiler.getTask(null, fileManager, null, null,
-            null, jfiles).call();
+        compiler.getTask(null, fileManager, diagnostics, null,  null, jfiles).call();
+        for(Diagnostic d : diagnostics.getDiagnostics() ){
+        	FuckedSourceException e = new FuckedSourceException();
+        	e.row = d.getLineNumber() - 4;
+        	e.column = d.getColumnNumber();
+        	throw e;
+        }
 
         // Creating an instance of our compiled class and
         // running its toString() method
@@ -55,6 +81,22 @@ public class LiveCompiler {
             .loadClass(fullName).newInstance();	
         System.out.println("COMPILING COMPLETE!");
         return instance;
+	}
+
+	private int findCounts(String search, String input) {
+		int lastIndex = 0;
+		int count =0;
+
+		while(lastIndex != -1){
+
+		       lastIndex = input.indexOf(search,lastIndex);
+
+		       if( lastIndex != -1){
+		             count ++;
+		             lastIndex+=search.length();
+		      }
+		}
+		return count;
 	}
 	
 	

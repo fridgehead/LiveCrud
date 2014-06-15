@@ -32,6 +32,7 @@ public class CodePanel {
 	Object lock = new Object();
 	PGraphics pGfx;
 	private int panelId;
+	private int errorRow = -1;
 	
 
 	public CodePanel(LiveCrud parent, int panelId){
@@ -45,9 +46,13 @@ public class CodePanel {
 		lines.add(new StringBuffer("protected void draw(){"));
 		lines.add(new StringBuffer(" "));
 		lines.add(new StringBuffer("}"));
+		
+		lines.add(new StringBuffer("protected void onBeat(){"));
+		lines.add(new StringBuffer(" "));
+		lines.add(new StringBuffer("}"));
 
 
-		font = parent.loadFont("BitstreamVeraSansMono-Roman-48.vlw");
+		font = parent.loadFont("BitstreamVeraSansMono-Bold-48.vlw");
 		parent.textFont(font, 15);
 		//ZOMG ANOTHER HACK
 		charWidth = (int)parent.textWidth(" ");
@@ -75,23 +80,30 @@ public class CodePanel {
 		}
 		int ct = 40;
 		maxWidth = 0;
-		//tint the text slightly red if the panel needs compiling
-		if(state == CompileState.STATE_DIRTY){
-			pGfx.fill(255, 200,200);
-			
-		} else {
-			pGfx.fill(255);
-		}
+		
 		synchronized(lock){
-			for(StringBuffer s : lines){
-				String st = s.toString();
+			for(int i = 0; i < lines.size(); i++){
+				
+				String st = lines.get(i).toString();
 				float w = pGfx.textWidth(st);
 				if(w > maxWidth){
 					maxWidth = w;
 				}
 				pGfx.fill(0,0,0,80);
 				pGfx.rect(10, ct - 14, w + 15, 20);
-				pGfx.fill(255);
+				//tint the text slightly red if the panel needs compiling
+				if(state != CompileState.STATE_COMPILED){
+					pGfx.fill(255, 200, 200);
+					//highlight error row
+					if (i == errorRow){
+						pGfx.fill(255,100,100);
+					}
+				
+				}else {
+					
+					pGfx.fill(255);
+				}
+				
 				pGfx.text(st, 20, ct);
 				ct += 20;
 			}
@@ -108,6 +120,10 @@ public class CodePanel {
 
 	}
 
+	public void setErrorRow(int row){
+		errorRow = row;
+	}
+	
 	public void keyPressed(KeyEvent k){
 
 		int cCode = k.getKeyCode();
@@ -127,18 +143,36 @@ public class CodePanel {
 			} else if (k.getModifiers() == 2){	//ctrl backspace to delete from cursorX back to 0
 				deleteToStartOfLine();
 			} else {
-				deleteChar();
+				backspaceChar();
 			}
 		} else if (cCode == KeyEvent.VK_ENTER){
 			keyboardEnter(k);
 		} else if (cCode == KeyEvent.VK_TAB){
 			newTab();
+		} else if (cCode == KeyEvent.VK_DELETE){
+			deleteChar();
 		} else {
 			char c = k.getKeyChar();
 			if(isPrintableChar(c)){
 				charTyped(k.getKeyChar());
 			}
 		}
+	}
+
+	private void deleteChar() {
+		if(cursorX >= lines.get(cursorY).length()){
+			//move next line onto this line
+			if(cursorY +1 < lines.size()){
+				lines.get(cursorY).append(lines.get(cursorY + 1));
+				lines.remove(cursorY + 1);
+			}
+			
+			
+		} else {
+			lines.get(cursorY).deleteCharAt(cursorX);
+			
+		}
+		
 	}
 
 	private void deleteToStartOfLine() {
@@ -160,6 +194,7 @@ public class CodePanel {
 				if(res != null){
 					state = CompileState.STATE_COMPILED;
 					compileResult = res;
+					errorRow = -1;
 				} else {
 					state = CompileState.STATE_ERROR;
 					
@@ -170,6 +205,7 @@ public class CodePanel {
 			if(res != null){
 				state = CompileState.STATE_COMPILED;
 				compileResult = res;
+				errorRow = -1;
 			} else {
 				state = CompileState.STATE_ERROR;
 			}
@@ -252,7 +288,7 @@ public class CodePanel {
 			}
 		}
 	}
-	private void deleteChar() {
+	private void backspaceChar() {
 		synchronized (lock) {
 
 
@@ -264,6 +300,19 @@ public class CodePanel {
 				cursorX--;
 			} else {
 				//backspace to end of prev line
+				synchronized (lock) {
+					
+				
+					StringBuffer oldLine = lines.get(cursorY);
+					
+					cursorY --;
+					if(cursorY >= 0) {
+						lines.get(cursorY).append(oldLine);
+						lines.remove(cursorY + 1);
+						cursorX ++;
+						
+					}
+				}
 			}
 		}
 		state = CompileState.STATE_DIRTY;
