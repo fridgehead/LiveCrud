@@ -15,10 +15,13 @@ public class LiveCompiler {
 	
 	public Object compile(StringBuilder  s) throws InstantiationException, IllegalAccessException, ClassNotFoundException{
 		String fullName = "DynClass";
-		
+		//insert the headers to make this a proper class
 		s.insert(0, "public class DynClass extends DrawableClass{\r\n");
 		s.insert(0, "import core.*;\r\nimport processing.core.*;\r\n;");
 		s.append("}");
+		
+		
+		
 		System.out.println("COMPILING-----");
 		System.out.println(s);
 		

@@ -15,6 +15,10 @@ public abstract class DrawableClass {
 	
 	protected abstract void setup();
 	
+	protected void onBeat(){
+		
+	}
+	
 	public void setPApplet(PApplet p){
 		System.out.println("set p");
 		this.p = p;
