@@ -15,6 +15,7 @@ CTRL-left/right = move to start/end of line
 
 backspace = durrrrrrrr
 CTRL+BACKSPACE = clear back to start of line
+SHIFT+BACKSPACE = clear entire line
 DELETE - HURRRRRRR
 
 CTRL+1-5 = switch to that tab
@@ -33,6 +34,8 @@ FUNCTIONS
 ------
 
 onBeat() - called with every beat
+onHalfBeat()
+onQuarterBeat()
 setup()	 -setup code that is run first
 draw()   - main drwing loop
 
@@ -47,6 +50,4 @@ all processing methods must be prefixed with "p.", thats the PApplet object
 LIMITATIONS
 -----------
 dont try and import any extra libraries, it'll fail
-dont use inner classes, it'll fail
-try no to cause any exceptions as it'll cause the currently running screen to stall
 

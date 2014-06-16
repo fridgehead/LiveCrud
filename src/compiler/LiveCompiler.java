@@ -59,6 +59,7 @@ public class LiveCompiler{
         // our own implementation (see details below)
         ArrayList<JavaSourceFromString> jfiles = new ArrayList<JavaSourceFromString>();
         jfiles.add(new JavaSourceFromString(fullName, s	));
+        
 
         //set up a diagnostic capture
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<JavaFileObject>();
@@ -76,7 +77,7 @@ public class LiveCompiler{
         }
 
         // Creating an instance of our compiled class and
-        // running its toString() method
+        // return it
         Object instance = fileManager.getClassLoader(null)
             .loadClass(fullName).newInstance();	
         System.out.println("COMPILING COMPLETE!");

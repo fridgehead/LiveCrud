@@ -1,8 +1,12 @@
 package core;
 
 
+import java.awt.Cursor;
+import java.awt.Point;
+import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 import compiler.FuckedSourceException;
@@ -25,13 +29,15 @@ public class LiveCrud extends PApplet implements KeyListener{
 
 	int beatDelay = 1000;
 	int beatCounter = 1000;
+	int beatHalfCounter = 500;
+	int beatQuarterCounter = 250;
 	int beatStartTime = 0;
 	int[] beatMarkers = new int[5];
 	int beatPtr = 0;
 	boolean beatDone = false;	
 
 	int frameDeltaTime = 0;
-	
+
 	PFont font;
 
 	//audio
@@ -58,7 +64,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 		}
 		refreshBeatDuration();
 		font = loadFont("BitstreamVeraSansMono-Bold-48.vlw");
-	
+		hideCursor();
 	}
 
 	public void draw(){
@@ -70,9 +76,12 @@ public class LiveCrud extends PApplet implements KeyListener{
 		}
 		//resetMatrix();
 		camera(width/2.0f, height/2.0f, (height/2.0f) / tan(PI*30.0f / 180.0f), width/2.0f, height/2.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-
-		cPanel[currentPanelIndex].draw();
-		
+		hint(PApplet.ENABLE_DEPTH_TEST);
+		try{
+			cPanel[currentPanelIndex].draw();
+		} catch (Exception e){
+			
+		}
 		noLights();
 		int ct = 0;
 		noStroke();
@@ -86,29 +95,47 @@ public class LiveCrud extends PApplet implements KeyListener{
 			} else {
 				fill(255,0,0);
 			}
-			rect(ct * 10, 0, 20,20);
+			rect(ct * 15, 0, 10,10);
 			if(ct == currentPanelIndex){
-				rect(ct*10,20,5,5);
+				rect(ct*15,12,5,5);
 			}
 			if(ct == currentDisplayIndex){
-				rect(ct*10 + 5, 20, 5,10);
+				rect(ct*15 + 5, 12, 5,10);
 			}
 			ct++;
-			
+
 		}
 
 		//draw the beat marker
 		strokeWeight(1);
 		for(int i = 0; i < beatPtr; i++){
 			rect(width - (i + 1) * 7 - 20, 0, 5,5);
-			
+
 		}
-		if(millis() > beatCounter){
+		if(beatCounter - millis() < 0){
 			beatCounter = millis() + beatDelay;
-			rect(width-20,0, 20,20);
+			rect(width-20,0, 8,20);
 
 			if(currentDisplay != null){
 				currentDisplay.onBeat();
+			}
+
+		}
+		if(beatHalfCounter - millis() < 0){
+			beatHalfCounter = millis() + beatDelay / 2;
+			rect(width-12,0, 8,20);
+
+			if(currentDisplay != null){
+				currentDisplay.onHalfBeat();
+			}
+
+		}
+		if(beatQuarterCounter - millis() < 0){
+			beatQuarterCounter = millis() + beatDelay / 4;
+			rect(width-4,0, 8,20);
+
+			if(currentDisplay != null){
+				currentDisplay.onQuarterBeat();
 			}
 
 		}
@@ -117,7 +144,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 		float centerFrequency = 0;
 		float spectrumScale = 4;
 		fft.forward(in.mix);
-		
+
 		textFont(font, 10);
 		fill(250);
 		for(int i = 0; i < fft.specSize(); i++)
@@ -128,7 +155,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 			}
 			stroke(255);
 			rect(i * 2, height, 2, -fft.getBand(i) * 0.5f );
-			
+
 		}
 		line(0, height - 50, width, height - 50);
 		line(0, height - 25, width, height - 25);
@@ -204,6 +231,13 @@ public class LiveCrud extends PApplet implements KeyListener{
 		}
 	}
 
+	void hideCursor() {
+		BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+		Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
+				cursorImg, new Point(0, 0), "blank cursor");
+		frame.setCursor(blankCursor);
+	}
+
 	public void mouseClicked(){
 
 
@@ -217,8 +251,16 @@ public class LiveCrud extends PApplet implements KeyListener{
 		avgDur /= 4.0f;
 		beatDelay = (int)avgDur;
 		beatCounter = millis() + beatDelay;
+		beatHalfCounter = millis() + beatDelay /2;
+		beatQuarterCounter = millis() + beatDelay /4;
+		
 		System.out.println("new beat duration: " + beatDelay);
 
+	}
+	
+	/* some useful utilities */
+	public void centre(){
+		translate(width/2, height/2);
 	}
 
 	public static void main(String args[]) {

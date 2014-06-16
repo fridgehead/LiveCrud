@@ -1,5 +1,6 @@
 package core;
 
+import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
@@ -15,6 +16,8 @@ public class CodePanel {
 	int cursorY = 0;
 	int charWidth = 0;
 	
+	Point selectionStart, selectionEnd;
+	boolean selectionRunning = false;
 	
 
 	/* scaling stuff */
@@ -71,10 +74,10 @@ public class CodePanel {
 		pGfx.noStroke();
 		pGfx.textFont(font, 15);
 		pGfx.pushMatrix();
-//		if(codeHeight > 900){
-//			codeHeight = 900;
-//			
-//		}
+		if(codeHeight > 900){
+			codeHeight = 900;
+			
+		}
 		float tY = pGfx.height / ((float)codeHeight + 50.0f);
 		float tX = pGfx.width / (maxWidth + 50);
 		
@@ -86,13 +89,16 @@ public class CodePanel {
 		}
 		int ct = 40;
 		maxWidth = 0;
-		if(cursorY - scrollOffset > 30){
-			scrollOffset = cursorY - 30;
+		int cursorYScreen = (int) ((cursorY * 20 + 23) * tY);
+		
+		scrollOffset = 0;
+		if(cursorYScreen > parent.height - 300){
+			scrollOffset = parent.height - 300 -cursorYScreen ;
 		} else if (cursorY - scrollOffset < 5){
-			scrollOffset = cursorY -5 ;
+			//scrollOffset = cursorY -5 ;
 			
 		}
-		//pGfx.translate(0, -scrollOffset * 20);
+		pGfx.translate(0, scrollOffset);
 		synchronized(lock){
 			for(int i = 0; i < lines.size(); i++){
 				
@@ -138,7 +144,7 @@ public class CodePanel {
 	}
 	
 	public void keyPressed(KeyEvent k){
-
+		
 		int cCode = k.getKeyCode();
 		//System.out.println("c: " + cCode);
 		if(cCode == KeyEvent.VK_UP){		//up
@@ -164,6 +170,7 @@ public class CodePanel {
 			newTab();
 		} else if (cCode == KeyEvent.VK_DELETE){
 			deleteChar();
+		
 		} else {
 			char c = k.getKeyChar();
 			if(isPrintableChar(c)){
@@ -273,6 +280,10 @@ public class CodePanel {
 	private void moveRight(int mod) {
 		if(mod == 2){
 			cursorX = lines.get(cursorY).length();
+		} else if (mod == 1){
+			if(selectionStart == null){
+				selectionRunning =  true;
+			}
 		} else {
 			cursorX++;
 			if(cursorX > lines.get(cursorY).length()){

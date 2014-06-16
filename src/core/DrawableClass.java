@@ -20,6 +20,12 @@ public abstract class DrawableClass {
 	protected void onBeat(){
 		
 	}
+	protected void onHalfBeat(){
+		
+	}
+	protected void onQuarterBeat(){
+	
+	}
 	
 	public void setPApplet(LiveCrud p){
 		System.out.println("set p");
