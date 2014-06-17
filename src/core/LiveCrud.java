@@ -8,6 +8,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Hashtable;
 
 import compiler.FuckedSourceException;
 import compiler.LiveCompiler;
@@ -17,6 +19,7 @@ import ddf.minim.Minim;
 import ddf.minim.analysis.FFT;
 import processing.core.PApplet;
 import processing.core.PFont;
+import processing.core.PImage;
 
 public class LiveCrud extends PApplet implements KeyListener{
 	LiveCompiler testComp;
@@ -39,6 +42,8 @@ public class LiveCrud extends PApplet implements KeyListener{
 	int frameDeltaTime = 0;
 
 	PFont font;
+	
+	HashMap<String, PImage> imageCache = new HashMap<String, PImage>();
 
 	//audio
 
@@ -57,7 +62,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 		audio = new Minim(this);
 		in = audio.getLineIn();
 		fft = new FFT( in.bufferSize(), in.sampleRate() );
-		fft.linAverages( 200 );
+		fft.linAverages( 1 );
 
 		for(int i = 0; i < 5; i++){
 			beatMarkers[i] = i * 1000;
@@ -72,17 +77,19 @@ public class LiveCrud extends PApplet implements KeyListener{
 		background(0);
 
 		if(currentDisplay != null){
-			currentDisplay.preDraw();
+			try{
+				currentDisplay.preDraw();
+			} catch (Exception e){}
 		}
 		//resetMatrix();
 		camera(width/2.0f, height/2.0f, (height/2.0f) / tan(PI*30.0f / 180.0f), width/2.0f, height/2.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 		hint(PApplet.ENABLE_DEPTH_TEST);
-		try{
-			cPanel[currentPanelIndex].draw();
-		} catch (Exception e){
-			
-		}
+		noTint();
 		noLights();
+		
+		cPanel[currentPanelIndex].draw();
+		
+		
 		int ct = 0;
 		noStroke();
 		for(CodePanel c : cPanel){
@@ -146,20 +153,38 @@ public class LiveCrud extends PApplet implements KeyListener{
 		fft.forward(in.mix);
 
 		textFont(font, 10);
-		fill(250);
-		for(int i = 0; i < fft.specSize(); i++)
+		fill(250,250,250,100);
+		noStroke();
+		for(int i = 0; i < fft.specSize() / 5; i++)
+			
 		{
-			if(i % 10 == 0){
-				line(i * 2, height, i*2, height-50);
-				text(i / 10, i * 2 + 5, height - 10);
+			if(i % 5 == 0){
+				stroke(250,250,250, 128);
+				line(i * 10, height, i*10, height-50);
+				text(i / 5, i * 10 + 25, height - 60);
 			}
-			stroke(255);
-			rect(i * 2, height, 2, -fft.getBand(i) * 0.5f );
+			//stroke(255);
+			noStroke();
+			rect(i * 10, height, 10, -fft.getBand(i) * 0.5f );
 
 		}
+		stroke(250,250,250,128);
 		line(0, height - 50, width, height - 50);
 		line(0, height - 25, width, height - 25);
 
+		//mouse markers
+		fill(128,128,0);
+		noStroke();
+		rect(2, mouseY - 20, 5,40);
+		text(mouseY, 15, mouseY);
+		rect(mouseX - 20, 960, 40, 5);
+		pushMatrix();
+		translate(mouseX, 960);
+		rotate(radians(-45));
+		text(mouseY, 5,0);
+		popMatrix();
+		
+		
 		if(switchAtNextFrame && nextDisplay != null){
 			currentDisplay = nextDisplay;
 			switchAtNextFrame = false;
@@ -167,7 +192,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 
 		frameDeltaTime = (int) (millis() - t);
 	}
-
+	
 	@Override
 	public void keyPressed(KeyEvent k){
 		if(k.getModifiers() == 2){		//CTRL mod
@@ -208,7 +233,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 			}
 		} catch (FuckedSourceException e){
 			System.out.println("r: " + e.row + "c: " + e.column);
-			cPanel[currentPanelIndex].setErrorRow((int) e.row);
+			cPanel[currentPanelIndex].setErrorPos((int) e.row, (int)e.column);
 		}catch (Exception e){
 
 			e.printStackTrace();
@@ -257,6 +282,25 @@ public class LiveCrud extends PApplet implements KeyListener{
 		System.out.println("new beat duration: " + beatDelay);
 
 	}
+	@Override
+	public PImage loadImage(String path){
+		 
+			PImage p = imageCache.get(path);
+			if(p != null){
+				System.out.println("cache hit");
+
+				
+				return p;
+			}else {
+		
+			System.out.println("Cahce miss");
+			 p = super.loadImage(path);
+			imageCache.put(path, p);
+			return p;
+		}
+		
+	}
+	
 	
 	/* some useful utilities */
 	public void centre(){

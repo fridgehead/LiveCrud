@@ -19,6 +19,8 @@ public class CodePanel {
 	Point selectionStart, selectionEnd;
 	boolean selectionRunning = false;
 	
+	ArrayList<Point> highLights = new ArrayList<Point>();
+	
 
 	/* scaling stuff */
 	int codeHeight = 0;
@@ -53,6 +55,12 @@ public class CodePanel {
 		lines.add(new StringBuffer("}"));
 		
 		lines.add(new StringBuffer("protected void onBeat(){"));
+		lines.add(new StringBuffer(" "));
+		lines.add(new StringBuffer("}"));
+		lines.add(new StringBuffer("protected void onHalfBeat(){"));
+		lines.add(new StringBuffer(" "));
+		lines.add(new StringBuffer("}"));
+		lines.add(new StringBuffer("protected void onQuarterBeat(){"));
 		lines.add(new StringBuffer(" "));
 		lines.add(new StringBuffer("}"));
 
@@ -99,6 +107,8 @@ public class CodePanel {
 			
 		}
 		pGfx.translate(0, scrollOffset);
+		pGfx.fill(255,0,0,128);
+		
 		synchronized(lock){
 			for(int i = 0; i < lines.size(); i++){
 				
@@ -128,6 +138,7 @@ public class CodePanel {
 			}
 			codeHeight = ct+ 20;
 		}
+		
 		pGfx.fill(255,255,0,200);
 		pGfx.noStroke();
 		pGfx.rect(cursorX * charWidth + 20, cursorY * 20 + 23, charWidth, 20);
@@ -139,8 +150,9 @@ public class CodePanel {
 
 	}
 
-	public void setErrorRow(int row){
+	public void setErrorPos(int row, int col){
 		errorRow = row;
+		
 	}
 	
 	public void keyPressed(KeyEvent k){
@@ -396,4 +408,7 @@ public class CodePanel {
 	public enum CompileState {
 		STATE_COMPILED, STATE_DIRTY, STATE_ERROR
 	}
+	
+	
+	
 }
