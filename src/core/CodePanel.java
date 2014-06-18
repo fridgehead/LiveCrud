@@ -21,6 +21,8 @@ public class CodePanel {
 	
 	ArrayList<Point> highLights = new ArrayList<Point>();
 	
+	boolean snippetMode = false;
+	String[] snippets;
 
 	/* scaling stuff */
 	int codeHeight = 0;
@@ -73,6 +75,9 @@ public class CodePanel {
 		targetScaleY = 1.0f;
 		currentScaleX = 1.0f;
 		currentScaley = 1.0f;
+		
+		snippets = parent.loadStrings("snippets/snippets.txt");
+		System.out.println("CodePanel : Loaded " + snippets.length + " snippets");
 	}
 
 	public void draw(){
@@ -138,10 +143,26 @@ public class CodePanel {
 			}
 			codeHeight = ct+ 20;
 		}
-		
+		//draw cursor
 		pGfx.fill(255,255,0,200);
 		pGfx.noStroke();
 		pGfx.rect(cursorX * charWidth + 20, cursorY * 20 + 23, charWidth, 20);
+		
+		//draw snippet
+		if(snippetMode){
+			pGfx.fill(150,150,150,200);
+
+			pGfx.rect(cursorX * charWidth + 20, cursorY * 20 + 23, 400, snippets.length * 11);
+			pGfx.fill(255,255,255);
+			 ct = 0;
+			 pGfx.textFont(parent.font, 10);
+			for(String sn : snippets){
+				pGfx.text((ct + 1) + ": " + sn, cursorX * charWidth + 20, cursorY * 20 + 33 + ct *10 );
+				ct++;
+			}
+
+		}
+		
 		pGfx.popMatrix();
 		pGfx.endDraw();
 		
@@ -184,10 +205,9 @@ public class CodePanel {
 			deleteChar();
 		
 		} else {
-			char c = k.getKeyChar();
-			if(isPrintableChar(c)){
-				charTyped(k.getKeyChar());
-			}
+			
+				charTyped(k);
+			
 		}
 	}
 
@@ -393,7 +413,45 @@ public class CodePanel {
 				block != Character.UnicodeBlock.SPECIALS;
 	}
 
-	private void charTyped(int cCode) {
+	private void charTyped(KeyEvent e) {
+		int cCode = e.getKeyCode();
+		
+		System.out.println("code: "  + cCode);
+		
+		if(e.getModifiers() == 1 && cCode == 32){
+			
+				snippetMode = true;
+			
+		} else if (cCode == KeyEvent.VK_ESCAPE){
+			snippetMode = false;
+			
+		} else {
+			
+			
+			
+			char c = e.getKeyChar();
+			if(snippetMode && c >= '1' && c <='5'){
+				insertSnippet((int)cCode - 49);
+			} else {
+				//System.out.println(c);
+				if(isPrintableChar(c)){
+					charTyped(c);
+				}
+			}
+		}
+	} 
+	
+	private void insertSnippet(int i) {
+		// TODO Auto-generated method stub
+		synchronized (lock) {
+			lines.add(cursorY, new StringBuffer(snippets[i]));
+			snippetMode = false;
+			
+		}
+	}
+
+	private void charTyped(int cCode){
+	
 		//get current line
 		synchronized(lock){
 			StringBuffer l = lines.get(cursorY);
