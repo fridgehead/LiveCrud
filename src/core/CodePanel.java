@@ -20,6 +20,7 @@ public class CodePanel {
 	boolean selectionRunning = false;
 	
 	ArrayList<Point> highLights = new ArrayList<Point>();
+	StringBuffer clipboard;
 	
 	boolean snippetMode = false;
 	String[] snippets;
@@ -424,6 +425,10 @@ public class CodePanel {
 			
 		} else if (cCode == KeyEvent.VK_ESCAPE){
 			snippetMode = false;
+		} else if (cCode == KeyEvent.VK_C && e.getModifiers() == 2){
+			copyLine();
+		} else if (cCode == KeyEvent.VK_V && e.getModifiers() == 2){
+			pasteLine();
 			
 		} else {
 			
@@ -441,6 +446,19 @@ public class CodePanel {
 		}
 	} 
 	
+	private void pasteLine() {
+		if(clipboard != null){
+			lines.add(cursorY, new StringBuffer(clipboard) );
+		}
+	}
+
+	private void copyLine() {
+		
+		clipboard = lines.get(cursorY);
+		
+		
+	}
+
 	private void insertSnippet(int i) {
 		// TODO Auto-generated method stub
 		synchronized (lock) {
