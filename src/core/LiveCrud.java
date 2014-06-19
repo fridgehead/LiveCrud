@@ -13,6 +13,7 @@ import java.util.Hashtable;
 
 import compiler.FuckedSourceException;
 import compiler.LiveCompiler;
+import core.CodePanel.CodeLine;
 import core.CodePanel.CompileState;
 import ddf.minim.AudioInput;
 import ddf.minim.Minim;
@@ -24,7 +25,7 @@ import processing.core.PVector;
 
 public class LiveCrud extends PApplet implements KeyListener{
 	LiveCompiler testComp;
-	DrawableClass currentDisplay, nextDisplay;
+	PersistentDrawableClass currentDisplay, nextDisplay;
 	boolean switchAtNextFrame = false;
 
 	CodePanel[] cPanel = new CodePanel[5];
@@ -99,9 +100,9 @@ public class LiveCrud extends PApplet implements KeyListener{
 		background(0);
 
 		if(currentDisplay != null){
-			try{
+			//try{
 				currentDisplay.preDraw();
-			} catch (Exception e){}
+			//} catch (Exception e){}
 		}
 		//resetMatrix();
 		camera(width/2.0f, height/2.0f, (height/2.0f) / tan(PI*30.0f / 180.0f), width/2.0f, height/2.0f, 0.0f, 0.0f, 1.0f, 0.0f);
@@ -240,22 +241,34 @@ public class LiveCrud extends PApplet implements KeyListener{
 
 	}
 
-	public DrawableClass compile(ArrayList<StringBuffer> sb){
-		StringBuilder s = new StringBuilder();
-		for(StringBuffer l : sb){
-			s.append(l.toString() + "\r\n");
-
+	public PersistentDrawableClass compile(ArrayList<CodeLine> sb){
+		
+		StringBuilder drawLines = new StringBuilder();
+		StringBuilder setupLines = new StringBuilder();
+		boolean foundMarker = false;
+		for(CodeLine l : sb){
+			if(l.setupMarker == true){
+				foundMarker = true;
+			}
+			if(!	foundMarker){
+				setupLines.append(l.toString() + "\r\n");
+			} else {
+				drawLines.append(l.toString() + "\r\n");
+			}
 		}
-		DrawableClass ret = null;
+		
+		PersistentDrawableClass ret = null;
 		try{
-			Object o = testComp.compile(s);
+			Object o = testComp.compile(setupLines, drawLines);
 			if(o != null){
-				ret = (DrawableClass)o;
+				ret = (PersistentDrawableClass)o;
+				
 
 			}
 		} catch (FuckedSourceException e){
 			System.out.println("r: " + e.row + "c: " + e.column);
 			cPanel[currentPanelIndex].setErrorPos((int) e.row, (int)e.column);
+			e.printStackTrace();
 		}catch (Exception e){
 
 			e.printStackTrace();
@@ -263,13 +276,14 @@ public class LiveCrud extends PApplet implements KeyListener{
 		return ret;
 	}
 
-	public DrawableClass compileAndRun(ArrayList<StringBuffer> sb, int panelId){
-		DrawableClass d = compile(sb);
+	public PersistentDrawableClass compileAndRun(ArrayList<CodeLine> sb, int panelId){
+		
+		PersistentDrawableClass d = compile(sb);
 		switchToDisplay(d, panelId);
 		return d;
 	}
 
-	public void switchToDisplay(DrawableClass d, int id){
+	public void switchToDisplay(PersistentDrawableClass d, int id){
 		if(d != null){
 			d.setPApplet(this);
 			nextDisplay = d;

@@ -45,6 +45,7 @@ ForwardingJavaFileManager {
 
 				try { 
 					JavaClassObject j = data.get(name);
+					
 					byte[] b = j.getBytes();
 
 					return super.defineClass(name, j.getBytes(), 0, b.length);
