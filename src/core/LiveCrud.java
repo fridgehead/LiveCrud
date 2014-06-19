@@ -13,6 +13,7 @@ import java.util.Hashtable;
 
 import compiler.FuckedSourceException;
 import compiler.LiveCompiler;
+import core.CodePanel.CodeLine;
 import core.CodePanel.CompileState;
 import ddf.minim.AudioInput;
 import ddf.minim.Minim;
@@ -20,6 +21,7 @@ import ddf.minim.analysis.FFT;
 import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PImage;
+import processing.core.PVector;
 
 public class LiveCrud extends PApplet implements KeyListener{
 	LiveCompiler testComp;
@@ -51,9 +53,30 @@ public class LiveCrud extends PApplet implements KeyListener{
 	public AudioInput in;
 	public FFT fft;
 
+	boolean argsRead = false;
 
 	public void setup(){
-		size(1280,1024, P3D);
+		int sx = 400;
+		int sy = 400;
+		if(argsList != null && argsRead == false){
+			for (String s : argsList){
+				System.out.println(s);
+				if(s.indexOf("width") != -1){
+					String[] p = s.split("=");
+					sx = Integer.parseInt(p[1]);
+					
+				} else if(s.indexOf("height") != -1){
+					String[] p = s.split("=");
+					sy = Integer.parseInt(p[1]);
+					
+				}
+			}
+			argsRead = true;
+		}
+		
+		size(1024,768, P3D);
+		frame.setResizable(true);
+		frame.setSize(sx,sy);
 		testComp = new LiveCompiler();
 		for(int i = 0; i < cPanel.length; i++){
 			cPanel[i] = new CodePanel(this, i);
@@ -218,9 +241,10 @@ public class LiveCrud extends PApplet implements KeyListener{
 
 	}
 
-	public DrawableClass compile(ArrayList<StringBuffer> sb){
+	public DrawableClass compile(ArrayList<CodeLine> sb){
 		StringBuilder s = new StringBuilder();
-		for(StringBuffer l : sb){
+		for(CodeLine l : sb){
+			
 			s.append(l.toString() + "\r\n");
 
 		}
@@ -241,7 +265,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 		return ret;
 	}
 
-	public DrawableClass compileAndRun(ArrayList<StringBuffer> sb, int panelId){
+	public DrawableClass compileAndRun(ArrayList<CodeLine> sb, int panelId){
 		DrawableClass d = compile(sb);
 		switchToDisplay(d, panelId);
 		return d;
@@ -306,10 +330,30 @@ public class LiveCrud extends PApplet implements KeyListener{
 	public void centre(){
 		translate(width/2, height/2);
 	}
-
+	
+	public void line(PVector p1, PVector p2){
+		line(p1.x, p1.y, p2.x, p2.y);
+	}
+	public void line(PVector p1, PVector p2, PVector p3){
+		line(p1.x, p1.y, p3.x, p2.x, p2.y, p3.z);
+	}
+	public void bezier(PVector p1, PVector p2, PVector p3, PVector p4){
+		bezier( p1.x, p1.y, p1.z,
+				p2.x, p2.y, p2.z,
+				p3.x, p3.y, p3.z,
+				p4.x, p4.y, p4.z);
+		
+	}
+	public void translate(PVector p){
+		translate(p.x, p.y, p.z);
+	}
+	
+	
+	public static String[] argsList;
 	public static void main(String args[]) {
 		System.out.println("Starting the fucking mess");
-		PApplet.main(new String[] { "core.LiveCrud" });
+		PApplet.main(new String[] {"core.LiveCrud" });
+		argsList = args;
 	}
 
 

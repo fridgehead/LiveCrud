@@ -11,7 +11,7 @@ import processing.core.PGraphics;
 
 public class CodePanel {
 	LiveCrud parent;
-	ArrayList<StringBuffer> lines = new ArrayList<StringBuffer>();
+	ArrayList<CodeLine> lines = new ArrayList<CodeLine>();
 	int cursorX = 0;
 	int cursorY = 0;
 	int charWidth = 0;
@@ -20,6 +20,8 @@ public class CodePanel {
 	boolean selectionRunning = false;
 	
 	ArrayList<Point> highLights = new ArrayList<Point>();
+	StringBuffer clipboard;
+	int markerPos = 0;
 	
 	boolean snippetMode = false;
 	String[] snippets;
@@ -48,23 +50,24 @@ public class CodePanel {
 		this.parent = parent;
 		this.panelId = panelId;
 		pGfx = parent.createGraphics(parent.width, parent.height, PApplet.P2D);
-		lines.add(new StringBuffer("protected void setup(){"));
-		lines.add(new StringBuffer(" "));
-		lines.add(new StringBuffer("}"));
-
-		lines.add(new StringBuffer("protected void draw(){"));
-		lines.add(new StringBuffer(" "));
-		lines.add(new StringBuffer("}"));
+		lines.add(new CodeLine("protected void setup(){"));
+		lines.add(new CodeLine(" "));
+		lines.add(new CodeLine("}"));
 		
-		lines.add(new StringBuffer("protected void onBeat(){"));
-		lines.add(new StringBuffer(" "));
-		lines.add(new StringBuffer("}"));
-		lines.add(new StringBuffer("protected void onHalfBeat(){"));
-		lines.add(new StringBuffer(" "));
-		lines.add(new StringBuffer("}"));
-		lines.add(new StringBuffer("protected void onQuarterBeat(){"));
-		lines.add(new StringBuffer(" "));
-		lines.add(new StringBuffer("}"));
+
+		lines.add(new CodeLine("protected void draw(){"));
+		lines.add(new CodeLine(" "));
+		lines.add(new CodeLine("}"));
+		
+		lines.add(new CodeLine("protected void onBeat(){"));
+		lines.add(new CodeLine(" "));
+		lines.add(new CodeLine("}"));
+		lines.add(new CodeLine("protected void onHalfBeat(){"));
+		lines.add(new CodeLine(" "));
+		lines.add(new CodeLine("}"));
+		lines.add(new CodeLine("protected void onQuarterBeat(){"));
+		lines.add(new CodeLine(" "));
+		lines.add(new CodeLine("}"));
 
 
 		font = parent.loadFont("BitstreamVeraSansMono-Bold-48.vlw");
@@ -117,8 +120,8 @@ public class CodePanel {
 		synchronized(lock){
 			for(int i = 0; i < lines.size(); i++){
 				
-				String st = lines.get(i).toString();
-				float w = pGfx.textWidth(st);
+				CodeLine st = lines.get(i);
+				float w = pGfx.textWidth(st.getString());
 				if(w > maxWidth){
 					maxWidth = w;
 				}
@@ -137,8 +140,12 @@ public class CodePanel {
 					
 					pGfx.fill(255);
 				}
-				
-				pGfx.text(st, 20, ct);
+				if(st.setupMarker){
+					pGfx.text("//----------------", 20, ct);
+					markerPos = i;
+				} else {
+					pGfx.text(st.getString(), 20, ct);
+				}
 				ct += 20;
 			}
 			codeHeight = ct+ 20;
@@ -212,7 +219,10 @@ public class CodePanel {
 	}
 
 	private void deleteChar() {
-		if(cursorX >= lines.get(cursorY).length()){
+		if(lines.get(cursorY).immutable == true){
+			return;
+		}
+		if(cursorX >= lines.get(cursorY).data.length()){
 			//move next line onto this line
 			if(cursorY +1 < lines.size()){
 				lines.get(cursorY).append(lines.get(cursorY + 1));
@@ -229,9 +239,14 @@ public class CodePanel {
 
 	private void deleteToStartOfLine() {
 		if(cursorX > 0){
-			StringBuffer s = lines.get(cursorY);
-			s.delete(0, cursorX);
-			cursorX = 0;
+			CodeLine s = lines.get(cursorY);
+			if(s.immutable == true){
+				return;
+			}
+			if(s.equals("<setupEnd>") == false){
+				s.delete(0, cursorX);
+				cursorX = 0;
+			}
 		}
 	}
 
@@ -276,7 +291,11 @@ public class CodePanel {
 	}
 
 	private void newLine() {
-		StringBuffer l = lines.get(cursorY);
+		CodeLine l = lines.get(cursorY);
+		if(l.immutable == true){
+			return;
+		}
+		
 		String end = l.substring(cursorX);
 		if(end.length() == 0){
 			end = " ";
@@ -286,7 +305,7 @@ public class CodePanel {
 
 			l.delete(cursorX, l.length());
 
-			lines.add(cursorY + 1, new StringBuffer(end));
+			lines.add(cursorY + 1, new CodeLine(end));
 		}
 		moveDown();
 		cursorX = 0;
@@ -354,7 +373,10 @@ public class CodePanel {
 		synchronized (lock) {
 
 
-			StringBuffer l = lines.get(cursorY);
+			CodeLine l = lines.get(cursorY);
+			if(l.immutable){
+				return;
+			}
 			if(cursorX > 0){
 
 //				if(cursorX-1 > 0){
@@ -368,7 +390,7 @@ public class CodePanel {
 				synchronized (lock) {
 					
 				
-					StringBuffer oldLine = lines.get(cursorY);
+					CodeLine oldLine = lines.get(cursorY);
 					
 					cursorY --;
 					if(cursorY >= 0) {
@@ -388,12 +410,15 @@ public class CodePanel {
 
 
 			if(lines.size() == 1){
-				StringBuffer l = lines.get(0);
-				l = new StringBuffer(" ");
+				CodeLine l = lines.get(0);
+				if(l.immutable) return;
+				l = new CodeLine(" ");
 				cursorX = 0;
 				cursorY = 0;
 
 			} else {
+				CodeLine l = lines.get(cursorY);
+				if(l.immutable) return;
 				lines.remove(cursorY);
 				cursorX = 0;
 				if(cursorY >= lines.size()){
@@ -424,6 +449,10 @@ public class CodePanel {
 			
 		} else if (cCode == KeyEvent.VK_ESCAPE){
 			snippetMode = false;
+		} else if (cCode == KeyEvent.VK_C && e.getModifiers() == 2){
+			copyLine();
+		} else if (cCode == KeyEvent.VK_V && e.getModifiers() == 2){
+			pasteLine();
 			
 		} else {
 			
@@ -441,10 +470,25 @@ public class CodePanel {
 		}
 	} 
 	
+	private void pasteLine() {
+		if(lines.get(cursorY).immutable) return;
+		if(clipboard != null){
+			lines.add(cursorY, new CodeLine(clipboard.toString()) );
+		}
+	}
+
+	private void copyLine() {
+		if(lines.get(cursorY).immutable) return;
+		clipboard = lines.get(cursorY).data;
+		
+		
+	}
+
 	private void insertSnippet(int i) {
 		// TODO Auto-generated method stub
+		if(lines.get(cursorY).immutable) return;
 		synchronized (lock) {
-			lines.add(cursorY, new StringBuffer(snippets[i]));
+			lines.add(cursorY, new CodeLine(snippets[i]));
 			snippetMode = false;
 			
 		}
@@ -454,7 +498,8 @@ public class CodePanel {
 	
 		//get current line
 		synchronized(lock){
-			StringBuffer l = lines.get(cursorY);
+			CodeLine l = lines.get(cursorY);
+			if(l.immutable) return;
 			l.insert(cursorX, (char)cCode);
 			cursorX++;
 			state = CompileState.STATE_DIRTY;
@@ -465,6 +510,54 @@ public class CodePanel {
 	
 	public enum CompileState {
 		STATE_COMPILED, STATE_DIRTY, STATE_ERROR
+	}
+	
+	public class CodeLine {
+		public StringBuffer data;
+		public boolean immutable = false;
+		public boolean setupMarker = false;
+		public CodeLine (String data){
+			this.data = new StringBuffer(data);
+		}
+		public String getString() {
+			return data.toString();
+			
+		}
+		public void insert(int cursorX, char cCode) {
+			// TODO Auto-generated method stub
+			data.insert(cursorX,  cCode);
+			
+		}
+		public String substring(int cursorX) {
+			
+			return data.substring(cursorX);
+		}
+		public int length() {
+			
+			return data.length();
+		}
+		public void delete(int i, int cursorX) {
+			if(immutable == false){
+				data.delete(i, cursorX);
+			}
+			
+		}
+		public void append(CodeLine codeLine) {
+			if(immutable == false){
+				data.append(codeLine.getString());
+			}
+			
+		}
+		public void deleteCharAt(int cursorX) {
+			if(immutable == false){
+				data.deleteCharAt(cursorX);
+			}
+			
+		}
+		
+		public String toString(){
+			return data.toString();
+		}
 	}
 	
 	
