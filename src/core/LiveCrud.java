@@ -25,7 +25,7 @@ import processing.core.PVector;
 
 public class LiveCrud extends PApplet implements KeyListener{
 	LiveCompiler testComp;
-	PersistentDrawableClass currentDisplay, nextDisplay;
+	DrawableClass currentDisplay, nextDisplay;
 	boolean switchAtNextFrame = false;
 
 	CodePanel[] cPanel = new CodePanel[5];
@@ -241,27 +241,20 @@ public class LiveCrud extends PApplet implements KeyListener{
 
 	}
 
-	public PersistentDrawableClass compile(ArrayList<CodeLine> sb){
-		
-		StringBuilder drawLines = new StringBuilder();
-		StringBuilder setupLines = new StringBuilder();
-		boolean foundMarker = false;
+
+	public DrawableClass compile(ArrayList<CodeLine> sb){
+		StringBuilder s = new StringBuilder();
 		for(CodeLine l : sb){
-			if(l.setupMarker == true){
-				foundMarker = true;
-			}
-			if(!	foundMarker){
-				setupLines.append(l.toString() + "\r\n");
-			} else {
-				drawLines.append(l.toString() + "\r\n");
-			}
+			
+			s.append(l.toString() + "\r\n");
+
 		}
 		
-		PersistentDrawableClass ret = null;
+		DrawableClass ret = null;
 		try{
-			Object o = testComp.compile(setupLines, drawLines);
+			Object o = testComp.compile(s);
 			if(o != null){
-				ret = (PersistentDrawableClass)o;
+				ret = (DrawableClass)o;
 				
 
 			}
@@ -276,14 +269,15 @@ public class LiveCrud extends PApplet implements KeyListener{
 		return ret;
 	}
 
-	public PersistentDrawableClass compileAndRun(ArrayList<CodeLine> sb, int panelId){
-		
-		PersistentDrawableClass d = compile(sb);
+
+	public DrawableClass compileAndRun(ArrayList<CodeLine> sb, int panelId){
+		DrawableClass d = compile(sb);
+
 		switchToDisplay(d, panelId);
 		return d;
 	}
 
-	public void switchToDisplay(PersistentDrawableClass d, int id){
+	public void switchToDisplay(DrawableClass d, int id){
 		if(d != null){
 			d.setPApplet(this);
 			nextDisplay = d;

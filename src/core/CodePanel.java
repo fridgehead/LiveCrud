@@ -35,7 +35,7 @@ public class CodePanel {
 	
 	int scrollOffset = 0;
 	
-	PersistentDrawableClass compileResult;
+	DrawableClass compileResult;
 	
 	public CompileState state = CompileState.STATE_DIRTY;
 	
@@ -53,10 +53,7 @@ public class CodePanel {
 		lines.add(new CodeLine("protected void setup(){"));
 		lines.add(new CodeLine(" "));
 		lines.add(new CodeLine("}"));
-		CodeLine marker = new CodeLine("//<setupEnd>");
-		marker.immutable = true;
-		marker.setupMarker = true;
-		lines.add(marker);
+
 
 		lines.add(new CodeLine("protected void draw(){"));
 		lines.add(new CodeLine(" "));
@@ -260,7 +257,7 @@ public class CodePanel {
 				//run the previously compiled object
 				parent.switchToDisplay(compileResult, panelId);
 			} else {
-				PersistentDrawableClass res = parent.compileAndRun(lines,panelId);
+				DrawableClass res = parent.compileAndRun(lines,panelId);
 				if(res != null){
 					state = CompileState.STATE_COMPILED;
 					compileResult = res;
@@ -271,7 +268,7 @@ public class CodePanel {
 				}
 			}
 		} else if (k.getModifiers() == 1){ 	//shift + enter compiles but does not run the panel
-			PersistentDrawableClass res = parent.compile(lines);
+			DrawableClass res = parent.compile(lines);
 			if(res != null){
 				state = CompileState.STATE_COMPILED;
 				compileResult = res;
