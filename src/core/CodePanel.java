@@ -45,10 +45,15 @@ public class CodePanel {
 	private int panelId;
 	private int errorRow = -1;
 	
+	int sizeX = 0;
+	int sizeY = 0;
+	
 
 	public CodePanel(LiveCrud parent, int panelId){
 		this.parent = parent;
 		this.panelId = panelId;
+		sizeX = parent.width;
+		sizeY = parent.height;
 		pGfx = parent.createGraphics(parent.width, parent.height, PApplet.P2D);
 		lines.add(new CodeLine("protected void setup(){"));
 		lines.add(new CodeLine(" "));
@@ -56,6 +61,10 @@ public class CodePanel {
 
 
 		lines.add(new CodeLine("protected void draw(){"));
+		lines.add(new CodeLine(" "));
+		lines.add(new CodeLine("}"));
+		
+		lines.add(new CodeLine("protected void numpadKey(int key){"));
 		lines.add(new CodeLine(" "));
 		lines.add(new CodeLine("}"));
 		
@@ -82,34 +91,45 @@ public class CodePanel {
 		snippets = parent.loadStrings("snippets/snippets.txt");
 		System.out.println("CodePanel : Loaded " + snippets.length + " snippets");
 	}
+	
+	public void resize(){
+		pGfx = parent.createGraphics(parent.width, parent.height, PApplet.P2D);
+		sizeX = parent.width;
+		sizeY = parent.height;
+	}
 
 	public void draw(){
+		
+		if(parent.width  != sizeX && parent.height != sizeY){
+			resize();
+		}
 		pGfx.beginDraw();
 		pGfx.background(0,0,0,0);
 		pGfx.fill(255);
 		pGfx.noStroke();
 		pGfx.textFont(font, 15);
 		pGfx.pushMatrix();
-		if(codeHeight > 900){
-			codeHeight = 900;
+		if(codeHeight > parent.height - 300){
+			codeHeight = parent.height-300;
 			
 		}
 		float tY = pGfx.height / ((float)codeHeight + 50.0f);
 		float tX = pGfx.width / (maxWidth + 50);
-		
+		int cursorYScreen = 0;
 		if(tX > tY){
 			pGfx.scale(tY);
-			
+			cursorYScreen = (int) ((cursorY * 20 + 23) * tY);
 		} else {
 			pGfx.scale(tX);
+			cursorYScreen = (int) ((cursorY * 20 + 23) * tX);
 		}
 		int ct = 40;
 		maxWidth = 0;
-		int cursorYScreen = (int) ((cursorY * 20 + 23) * tY);
+		
 		
 		scrollOffset = 0;
 		if(cursorYScreen > parent.height - 300){
-			scrollOffset = parent.height - 300 -cursorYScreen ;
+			scrollOffset = parent.height - 300 - cursorYScreen  ;
 		} else if (cursorY - scrollOffset < 5){
 			//scrollOffset = cursorY -5 ;
 			
@@ -146,6 +166,10 @@ public class CodePanel {
 				} else {
 					pGfx.text(st.getString(), 20, ct);
 				}
+//				pGfx.fill(255,0,0);
+//				pGfx.rect(st.tabStart * charWidth + 20, ct - 20, charWidth, 20);
+				
+				
 				ct += 20;
 			}
 			codeHeight = ct+ 20;
@@ -154,6 +178,7 @@ public class CodePanel {
 		pGfx.fill(255,255,0,200);
 		pGfx.noStroke();
 		pGfx.rect(cursorX * charWidth + 20, cursorY * 20 + 23, charWidth, 20);
+		
 		
 		//draw snippet
 		if(snippetMode){
@@ -174,6 +199,7 @@ public class CodePanel {
 		pGfx.endDraw();
 		
 		parent.hint(PApplet.DISABLE_DEPTH_TEST);
+		parent.imageMode(PApplet.CORNERS);
 		parent.image(pGfx, 0, 0);
 
 	}
@@ -243,10 +269,10 @@ public class CodePanel {
 			if(s.immutable == true){
 				return;
 			}
-			if(s.equals("<setupEnd>") == false){
-				s.delete(0, cursorX);
-				cursorX = 0;
-			}
+			s.delete(0, cursorX);
+			cursorX = 0;
+			s.tabStart = 0;
+			
 		}
 	}
 
@@ -283,9 +309,7 @@ public class CodePanel {
 
 	/* trollololol*/
 	private void newTab() {
-		charTyped(' ');
-		charTyped(' ');
-		charTyped(' ');
+		lines.get(cursorY).newTab();
 
 		state = CompileState.STATE_DIRTY;
 	}
@@ -304,11 +328,15 @@ public class CodePanel {
 
 
 			l.delete(cursorX, l.length());
-
-			lines.add(cursorY + 1, new CodeLine(end));
+			for(int i =0 ; i < l.tabStart / 3; i++){
+				end = "   " + end;
+			}
+			CodeLine newLine = new CodeLine(end);
+			newLine.tabStart = l.tabStart;
+			lines.add(cursorY + 1, newLine);
 		}
 		moveDown();
-		cursorX = 0;
+		cursorX = l.tabStart;
 		state = CompileState.STATE_DIRTY;
 
 	}
@@ -330,11 +358,17 @@ public class CodePanel {
 
 	private void moveRight(int mod) {
 		if(mod == 2){
-			cursorX = lines.get(cursorY).length();
-		} else if (mod == 1){
-			if(selectionStart == null){
-				selectionRunning =  true;
+			//find next ' ' in string
+			String t = lines.get(cursorY).data.toString().substring(cursorX+1);
+			int ind = t.indexOf(" ");
+			//System.out.println(t + " " + ind);
+			if(ind > 0){
+				cursorX = cursorX + ind + 1;
+			} else {
+				cursorX = lines.get(cursorY).data.length() - 1;
 			}
+		} else if (mod == 1){
+			cursorX = lines.get(cursorY).data.length() ;
 		} else {
 			cursorX++;
 			if(cursorX > lines.get(cursorY).length()){
@@ -361,7 +395,19 @@ public class CodePanel {
 
 	private void moveLeft(int mod) {
 		if(mod == 2){
+			//cursorX = 0;
+			//find next ' ' in string
+			String t = lines.get(cursorY).data.toString().substring(0, cursorX);
+			int ind = t.lastIndexOf(" ");
+			//System.out.println(t + " " + ind);
+			if(ind > 0){
+				cursorX = ind;
+			} else {
+				cursorX = 0;
+			}
+		} else if (mod == 1){
 			cursorX = 0;
+			
 		} else {
 			cursorX --;
 			if (cursorX < 0){
@@ -380,10 +426,7 @@ public class CodePanel {
 			if(cursorX > 0){
 
 //				if(cursorX-1 > 0){
-					if(l.length() > 0){
-						l.deleteCharAt(cursorX-1);
-					}
-					cursorX--;
+					l.backSpace();
 //				}
 			} else {
 				//backspace to end of prev line
@@ -444,7 +487,7 @@ public class CodePanel {
 		System.out.println("code: "  + cCode);
 		
 		if(e.getModifiers() == 1 && cCode == 32){
-			
+			System.out.println("sni");
 				snippetMode = true;
 			
 		} else if (cCode == KeyEvent.VK_ESCAPE){
@@ -462,6 +505,7 @@ public class CodePanel {
 			if(snippetMode && c >= '1' && c <='5'){
 				insertSnippet((int)cCode - 49);
 			} else {
+				snippetMode = false;
 				//System.out.println(c);
 				if(isPrintableChar(c)){
 					charTyped(c);
@@ -470,6 +514,20 @@ public class CodePanel {
 		}
 	} 
 	
+	private void charTyped(int cCode){
+	
+		//get current line
+		synchronized(lock){
+			CodeLine l = lines.get(cursorY);
+			if(l.immutable) return;
+			l.insert(cursorX, (char)cCode);
+			cursorX++;
+			state = CompileState.STATE_DIRTY;
+			
+		}
+	
+	}
+
 	private void pasteLine() {
 		if(lines.get(cursorY).immutable) return;
 		if(clipboard != null){
@@ -488,26 +546,14 @@ public class CodePanel {
 		// TODO Auto-generated method stub
 		if(lines.get(cursorY).immutable) return;
 		synchronized (lock) {
-			lines.add(cursorY, new CodeLine(snippets[i]));
+			if(i >= 0 && i <snippets.length){
+				lines.add(cursorY, new CodeLine(snippets[i]));
+			}
 			snippetMode = false;
 			
 		}
 	}
 
-	private void charTyped(int cCode){
-	
-		//get current line
-		synchronized(lock){
-			CodeLine l = lines.get(cursorY);
-			if(l.immutable) return;
-			l.insert(cursorX, (char)cCode);
-			cursorX++;
-			state = CompileState.STATE_DIRTY;
-			
-		}
-
-	}
-	
 	public enum CompileState {
 		STATE_COMPILED, STATE_DIRTY, STATE_ERROR
 	}
@@ -516,15 +562,52 @@ public class CodePanel {
 		public StringBuffer data;
 		public boolean immutable = false;
 		public boolean setupMarker = false;
+		public int tabStart = 0;
+		
 		public CodeLine (String data){
 			this.data = new StringBuffer(data);
+		}
+		
+		public void backSpace() {
+			
+			if(data.length() > 0){
+				
+					if(cursorX - 1 < data.length()){
+						data.deleteCharAt(cursorX-1);
+					}
+					cursorX--;
+				if(cursorX < tabStart){
+					tabStart = cursorX;
+				}
+			}
+			
+			
+		}
+
+		public void newTab() {
+			insert(cursorX, ' ');
+			insert(cursorX, ' ');
+			insert(cursorX, ' ');
+			if(cursorX <= tabStart){
+				cursorX = tabStart + 3;
+				tabStart += 3;
+			} else {
+				cursorX += 2;
+			}
+			
+			
+			
+		}
+
+		public int getTabStart(){
+			return tabStart;
 		}
 		public String getString() {
 			return data.toString();
 			
 		}
 		public void insert(int cursorX, char cCode) {
-			// TODO Auto-generated method stub
+			
 			data.insert(cursorX,  cCode);
 			
 		}
@@ -539,6 +622,9 @@ public class CodePanel {
 		public void delete(int i, int cursorX) {
 			if(immutable == false){
 				data.delete(i, cursorX);
+				if(cursorX < tabStart){
+					tabStart--;
+				}
 			}
 			
 		}
@@ -551,6 +637,9 @@ public class CodePanel {
 		public void deleteCharAt(int cursorX) {
 			if(immutable == false){
 				data.deleteCharAt(cursorX);
+				if(cursorX < tabStart){
+					tabStart--;
+				}
 			}
 			
 		}

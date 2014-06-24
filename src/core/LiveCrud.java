@@ -4,6 +4,8 @@ package core;
 import java.awt.Cursor;
 import java.awt.Point;
 import java.awt.Toolkit;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
@@ -17,6 +19,7 @@ import core.CodePanel.CodeLine;
 import core.CodePanel.CompileState;
 import ddf.minim.AudioInput;
 import ddf.minim.Minim;
+import ddf.minim.analysis.BeatDetect;
 import ddf.minim.analysis.FFT;
 import processing.core.PApplet;
 import processing.core.PFont;
@@ -29,6 +32,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 	boolean switchAtNextFrame = false;
 
 	CodePanel[] cPanel = new CodePanel[5];
+	
 	int currentPanelIndex = 0;
 	private int currentDisplayIndex;
 
@@ -38,7 +42,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 	int beatQuarterCounter = 250;
 	int beatStartTime = 0;
 	int[] beatMarkers = new int[5];
-	int beatPtr = 0;
+	int beatPtr = 0;	
 	boolean beatDone = false;	
 
 	int frameDeltaTime = 0;
@@ -52,6 +56,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 	public Minim audio;
 	public AudioInput in;
 	public FFT fft;
+	public BeatDetect beatDetect;
 
 	boolean argsRead = false;
 
@@ -86,6 +91,8 @@ public class LiveCrud extends PApplet implements KeyListener{
 		in = audio.getLineIn();
 		fft = new FFT( in.bufferSize(), in.sampleRate() );
 		fft.linAverages( 1 );
+		
+		beatDetect = new BeatDetect();
 
 		for(int i = 0; i < 5; i++){
 			beatMarkers[i] = i * 1000;
@@ -98,6 +105,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 	public void draw(){
 		long t = millis();
 		background(0);
+		hint(PApplet.ENABLE_DEPTH_TEST);
 
 		if(currentDisplay != null){
 			//try{
@@ -170,6 +178,12 @@ public class LiveCrud extends PApplet implements KeyListener{
 
 		}
 
+		//beat detection
+		beatDetect.detect(in.mix);
+		if(beatDetect.isOnset() && currentDisplay != null){
+	//		currentDisplay.onBeat();
+		}
+		
 		//now fft
 		float centerFrequency = 0;
 		float spectrumScale = 4;
@@ -214,7 +228,21 @@ public class LiveCrud extends PApplet implements KeyListener{
 		}
 
 		frameDeltaTime = (int) (millis() - t);
+		
+//		this.addComponentListener( new ComponentAdapter(){
+//			public void componentResized(ComponentEvent e){
+//				
+//				for(CodePanel c : cPanel){
+//					c.resize();
+//				}
+//				System.out.println("resized to " + width + " " + height);
+//			}
+//			
+//			
+//		});
 	}
+	
+	
 	
 	@Override
 	public void keyPressed(KeyEvent k){
@@ -236,7 +264,15 @@ public class LiveCrud extends PApplet implements KeyListener{
 				cPanel[currentPanelIndex].keyPressed(k);
 			}
 		} else {
-			cPanel[currentPanelIndex].keyPressed(k);
+			int c = k.getKeyCode();
+			if(c >= 96 && c <= 105){	
+				//keypad, pass this into the currently running script
+				if(currentDisplay !=null){
+					currentDisplay.numpadKey(c - 96);
+				}
+			} else {
+				cPanel[currentPanelIndex].keyPressed(k);
+			}
 		}
 
 	}

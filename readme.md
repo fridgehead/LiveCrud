@@ -1,4 +1,4 @@
-LIVECRUD
+LIVECRUD  v0.2 "it gets worse"
 ------
 
 a crappy livecoding environment based on processing
@@ -11,7 +11,8 @@ SHIFT+ENTER = compile current code but do not run it
 CTRL+ENTER = compile and run current tab
 
 arrow keys = move around
-CTRL-left/right = move to start/end of line
+CTRL-left/right = move to next space 
+SHIFT- left/right = move to start/end of line
 
 backspace = durrrrrrrr
 CTRL+BACKSPACE = clear back to start of line
@@ -19,6 +20,8 @@ SHIFT+BACKSPACE = clear entire line
 DELETE - HURRRRRRR
 
 CTRL+1-5 = switch to that tab
+
+shift + space = show snippet window, press number to insert that snippet. Anything else to clear it
 
 
 GUI

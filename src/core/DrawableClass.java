@@ -1,4 +1,5 @@
 package core;
+import damkjer.ocd.Camera;
 import ddf.minim.analysis.FFT;
 
 
@@ -6,6 +7,7 @@ public abstract class DrawableClass {
 	boolean ready = false;
 	protected LiveCrud p;
 	protected FFT fft;
+	protected Camera camera;
 	
 	protected abstract void draw();
 	//called by main loop, only call draw if p has been set
@@ -31,8 +33,13 @@ public abstract class DrawableClass {
 		System.out.println("set p");
 		this.p = p;
 		this.fft = p.fft;
+		this.camera = new Camera(p);
 		ready = true;
 		setup();
+	}
+	protected void numpadKey(int i) {
+		// TODO Auto-generated method stub
+		
 	}
 	
 }

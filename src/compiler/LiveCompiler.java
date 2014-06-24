@@ -16,7 +16,7 @@ public class LiveCompiler{
 	JavaSourceFromString source;
 	int count = 0;
 	
-	String[] template = {"public class DynClass extends DrawableClass{\r\n", "import core.*;\r\nimport processing.core.*;\r\n"};
+	String[] template = {"public class DynClass extends DrawableClass{\r\n", "import core.*;\r\nimport processing.core.*;\r\nimport damkjer.ocd.Camera;\r\n"};
 	
 	
 	public LiveCompiler(){}
