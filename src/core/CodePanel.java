@@ -545,9 +545,21 @@ public class CodePanel {
 	private void insertSnippet(int i) {
 		// TODO Auto-generated method stub
 		if(lines.get(cursorY).immutable) return;
+		String[] toInsert = snippets[i].split("\r");
+		System.out.println(toInsert);
 		synchronized (lock) {
 			if(i >= 0 && i <snippets.length){
-				lines.add(cursorY, new CodeLine(snippets[i]));
+				String s = "";
+				for(int p =0; p < cursorX; p++){
+					s = s + " ";
+					
+				}
+				for(int p = toInsert.length - 1; p >= 0; p--){
+					
+				
+					lines.add(cursorY, new CodeLine(s + toInsert[p]));
+				}
+				cursorX = lines.get(cursorY).data.length();
 			}
 			snippetMode = false;
 			

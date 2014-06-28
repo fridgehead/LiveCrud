@@ -1,5 +1,5 @@
 package core;
-
+import de.voidplus.leapmotion.*;
 
 import java.awt.Cursor;
 import java.awt.Point;
@@ -58,6 +58,9 @@ public class LiveCrud extends PApplet implements KeyListener{
 	public FFT fft;
 	public BeatDetect beatDetect;
 
+	public LeapMotion leap;
+	
+	
 	boolean argsRead = false;
 
 	public void setup(){
@@ -100,6 +103,11 @@ public class LiveCrud extends PApplet implements KeyListener{
 		refreshBeatDuration();
 		font = loadFont("BitstreamVeraSansMono-Bold-48.vlw");
 		hideCursor();
+		
+		leap = new LeapMotion(this);
+		if(leap == null){
+			System.out.println("no leap mption detected");
+		}
 	}
 
 	public void draw(){
@@ -228,6 +236,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 		}
 
 		frameDeltaTime = (int) (millis() - t);
+		
 		
 //		this.addComponentListener( new ComponentAdapter(){
 //			public void componentResized(ComponentEvent e){

@@ -1,6 +1,7 @@
 package core;
 import damkjer.ocd.Camera;
 import ddf.minim.analysis.FFT;
+import de.voidplus.leapmotion.LeapMotion;
 
 
 public abstract class DrawableClass {
@@ -8,6 +9,8 @@ public abstract class DrawableClass {
 	protected LiveCrud p;
 	protected FFT fft;
 	protected Camera camera;
+	
+	protected LeapMotion leap;
 	
 	protected abstract void draw();
 	//called by main loop, only call draw if p has been set
@@ -34,6 +37,7 @@ public abstract class DrawableClass {
 		this.p = p;
 		this.fft = p.fft;
 		this.camera = new Camera(p);
+		leap = p.leap;
 		ready = true;
 		setup();
 	}
