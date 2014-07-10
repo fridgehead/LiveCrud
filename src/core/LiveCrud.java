@@ -383,7 +383,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 	}
 	
 	public void line(PVector p1, PVector p2){
-		line(p1.x, p1.y, p2.x, p2.y);
+		line(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z);
 	}
 	public void line(PVector p1, PVector p2, PVector p3){
 		line(p1.x, p1.y, p3.x, p2.x, p2.y, p3.z);
