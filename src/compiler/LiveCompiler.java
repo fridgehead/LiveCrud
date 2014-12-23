@@ -1,5 +1,6 @@
 package compiler;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
@@ -17,7 +18,11 @@ public class LiveCompiler{
 	int count = 0;
 	
 	String[] template = {	"public class DynClass extends DrawableClass{\r\n", 
-							"import core.*;\r\nimport processing.core.*;\r\nimport damkjer.ocd.Camera;\r\nimport de.voidplus.leapmotion.*;\r\n"};
+							"import core.*;\r\n",
+							"import processing.core.*;\r\n",
+							"import damkjer.ocd.Camera;\r\n",
+							"import de.voidplus.leapmotion.*;\r\n",
+							};
 	
 	
 	public LiveCompiler(){}
@@ -72,8 +77,9 @@ public class LiveCompiler{
         compiler.getTask(null, fileManager, diagnostics, null,  null, jfiles).call();
         for(Diagnostic d : diagnostics.getDiagnostics() ){
         	FuckedSourceException e = new FuckedSourceException();
-        	e.row = d.getLineNumber() - 4;
+        	e.row = d.getLineNumber() - template.length - 1;
         	e.column = d.getColumnNumber();
+        	e.error = d.getMessage(Locale.ENGLISH);
         	throw e;
         }
 

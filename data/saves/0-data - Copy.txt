@@ -1,0 +1,21 @@
+Movie testmov;
+ 
+protected void setup(){
+   testmov = new Movie(p, "data/test.mp4");
+    
+}
+protected void draw(){
+   p.image(testmov, 0, 0); 
+}
+protected void numpadKey(int key){
+ 
+}
+protected void onBeat(){
+ 
+}
+protected void onHalfBeat(){
+ 
+}
+protected void onQuarterBeat(){
+ 
+}

@@ -2,6 +2,7 @@ package core;
 
 import java.awt.Point;
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
 
@@ -12,6 +13,7 @@ import processing.core.PGraphics;
 public class CodePanel {
 	LiveCrud parent;
 	ArrayList<CodeLine> lines = new ArrayList<CodeLine>();
+	ArrayList<String> fileList = new ArrayList<String>();
 	int cursorX = 0;
 	int cursorY = 0;
 	int charWidth = 0;
@@ -23,7 +25,10 @@ public class CodePanel {
 	StringBuffer clipboard;
 	int markerPos = 0;
 	
-	boolean snippetMode = false;
+	//boolean snippetMode = false;
+	EditorMode editorMode = EditorMode.MODE_EDIT;
+	int fileCursorPos = 0;
+	
 	String[] snippets;
 
 	/* scaling stuff */
@@ -44,9 +49,11 @@ public class CodePanel {
 	PGraphics pGfx;
 	private int panelId;
 	private int errorRow = -1;
+	private int errorCol = -1;
 	
 	int sizeX = 0;
 	int sizeY = 0;
+	
 	
 
 	public CodePanel(LiveCrud parent, int panelId){
@@ -99,7 +106,47 @@ public class CodePanel {
 	}
 
 	public void draw(){
+		if(editorMode == EditorMode.MODE_EDIT || editorMode == EditorMode.MODE_SNIPPET){
+			drawTextEditor();
+		} else if (editorMode == EditorMode.MODE_LOAD || editorMode == EditorMode.MODE_SAVE){
+			drawFileDialog();
+		}
+	}
+
+	private void drawFileDialog() {
+		// TODO Auto-generated method stub
+		pGfx.beginDraw();
+		pGfx.background(0,0,0,0);
+		pGfx.fill(255);
+		pGfx.noStroke();
+		pGfx.pushMatrix();
+		pGfx.textFont(font, 25);
+		pGfx.scale(1);
+
+		String t = "LOAD";
+		if(editorMode == EditorMode.MODE_SAVE){
+			t = "SAVE";
+		}
+		pGfx.text(t, 10,40);
+		pGfx.textFont(font, 15);
 		
+		int py = 0;
+		for(String s : fileList){
+			pGfx.text(s, 20, 90 + py);
+			py+= 20;
+		}
+		pGfx.fill(255,255,0,128);
+		pGfx.rect(0,fileCursorPos * 20 + 70, 200, 20);
+		pGfx.popMatrix();
+		
+		pGfx.endDraw();
+		parent.hint(PApplet.DISABLE_DEPTH_TEST);
+		parent.imageMode(PApplet.CORNERS);
+		parent.image(pGfx, 0, 0);
+	}
+
+	private void drawTextEditor() {
+
 		if(parent.width  != sizeX && parent.height != sizeY){
 			resize();
 		}
@@ -154,6 +201,7 @@ public class CodePanel {
 					//highlight error row
 					if (i == errorRow){
 						pGfx.fill(255,100,100);
+						pGfx.rect(errorCol * charWidth + 20, errorRow * 20 + 23, charWidth, 20);
 					}
 				
 				}else {
@@ -181,7 +229,7 @@ public class CodePanel {
 		
 		
 		//draw snippet
-		if(snippetMode){
+		if(editorMode == EditorMode.MODE_SNIPPET){
 			pGfx.fill(150,150,150,200);
 
 			pGfx.rect(cursorX * charWidth + 20, cursorY * 20 + 23, 400, snippets.length * 11);
@@ -201,11 +249,15 @@ public class CodePanel {
 		parent.hint(PApplet.DISABLE_DEPTH_TEST);
 		parent.imageMode(PApplet.CORNERS);
 		parent.image(pGfx, 0, 0);
-
+		
 	}
 
 	public void setErrorPos(int row, int col){
 		errorRow = row;
+		errorCol = col;
+		cursorX = errorCol;
+		cursorY = errorRow;
+		
 		
 	}
 	
@@ -236,11 +288,41 @@ public class CodePanel {
 			newTab();
 		} else if (cCode == KeyEvent.VK_DELETE){
 			deleteChar();
-		
+		} else if (cCode == KeyEvent.VK_S && k.getModifiers() == 2){ 	//save
+			System.out.println("jesus saves tab number : " + panelId);
+			startFileDialog(EditorMode.MODE_SAVE);
+		} else if (cCode == KeyEvent.VK_L && k.getModifiers() == 2){ 	//load
+			System.out.println("take a load : " + panelId);
+			
+			startFileDialog(EditorMode.MODE_LOAD);
+			
 		} else {
 			
 				charTyped(k);
 			
+		}
+	}
+
+	private void saveThatShit() {
+		//save the current set to a text file
+		String[] data = new String[ lines.size()];
+		
+		for(int i = 0; i < data.length; i++){
+			data[i] = lines.get(i).toString();
+		}
+	
+		parent.saveStrings("data/saves/" + panelId + "-data.txt", data);
+		
+	}
+	private void loadThatShit(){
+		
+		String[] data = parent.loadStrings("data/saves/" + panelId + "-data.txt");
+		if(data != null){
+			lines.clear();
+			for(String s :data){
+				lines.add(new CodeLine(s));
+				
+			}
 		}
 	}
 
@@ -288,6 +370,7 @@ public class CodePanel {
 					state = CompileState.STATE_COMPILED;
 					compileResult = res;
 					errorRow = -1;
+					errorCol = -1;
 				} else {
 					state = CompileState.STATE_ERROR;
 					
@@ -299,6 +382,7 @@ public class CodePanel {
 				state = CompileState.STATE_COMPILED;
 				compileResult = res;
 				errorRow = -1;
+				errorCol = -1;
 			} else {
 				state = CompileState.STATE_ERROR;
 			}
@@ -342,15 +426,23 @@ public class CodePanel {
 	}
 
 	private void moveUp() {
-		cursorY -= 1;
-		if (cursorY < 0){
-			cursorY = lines.size() - 1;
-		}
-		int lineLen = lines.get(cursorY).length();
-		if(cursorX >= lineLen){
-			cursorX = lineLen-1;
-			if(cursorX < 0){
-				cursorX = 0;
+		if(editorMode == EditorMode.MODE_EDIT){
+			cursorY -= 1;
+			if (cursorY < 0){
+				cursorY = lines.size() - 1;
+			}
+			int lineLen = lines.get(cursorY).length();
+			if(cursorX >= lineLen){
+				cursorX = lineLen-1;
+				if(cursorX < 0){
+					cursorX = 0;
+				}
+			}
+		} else {
+			fileCursorPos -= 1;
+			if(fileCursorPos < 0){
+				fileCursorPos = fileList.size() - 1;
+				
 			}
 		}
 			
@@ -378,15 +470,24 @@ public class CodePanel {
 	}
 
 	private void moveDown() {
-		cursorY ++;
-		if (cursorY >= lines.size()){
-			cursorY = 0;
-		}
-		int lineLen = lines.get(cursorY).length();
-		if(cursorX >= lineLen){
-			cursorX = lineLen-1;
-			if(cursorX < 0){
-				cursorX = 0;
+		if(editorMode == EditorMode.MODE_EDIT){
+	
+			cursorY ++;
+			if (cursorY >= lines.size()){
+				cursorY = 0;
+			}
+			int lineLen = lines.get(cursorY).length();
+			if(cursorX >= lineLen){
+				cursorX = lineLen-1;
+				if(cursorX < 0){
+					cursorX = 0;
+				}
+			}
+		} else {
+			fileCursorPos += 1;
+			if(fileCursorPos >=  fileList.size()){
+				fileCursorPos = 0;
+				
 			}
 		}
 		
@@ -484,28 +585,28 @@ public class CodePanel {
 	private void charTyped(KeyEvent e) {
 		int cCode = e.getKeyCode();
 		
-		System.out.println("code: "  + cCode);
+		//System.out.println("code: "  + cCode);
 		
 		if(e.getModifiers() == 1 && cCode == 32){
 			System.out.println("sni");
-				snippetMode = true;
-			
+			editorMode = EditorMode.MODE_SNIPPET;
 		} else if (cCode == KeyEvent.VK_ESCAPE){
-			snippetMode = false;
+			editorMode = EditorMode.MODE_EDIT;
+		
 		} else if (cCode == KeyEvent.VK_C && e.getModifiers() == 2){
 			copyLine();
 		} else if (cCode == KeyEvent.VK_V && e.getModifiers() == 2){
 			pasteLine();
-			
+		
 		} else {
 			
 			
 			
 			char c = e.getKeyChar();
-			if(snippetMode && c >= '1' && c <='5'){
+			if(editorMode == EditorMode.MODE_SNIPPET && c >= '1' && c <='5'){
 				insertSnippet((int)cCode - 49);
 			} else {
-				snippetMode = false;
+				//editorMode = EditorMode.MODE_EDIT;
 				//System.out.println(c);
 				if(isPrintableChar(c)){
 					charTyped(c);
@@ -514,6 +615,28 @@ public class CodePanel {
 		}
 	} 
 	
+	private void startFileDialog(EditorMode newMode) {
+		// TODO Auto-generated method stub
+		editorMode = newMode;
+		if(editorMode == EditorMode.MODE_LOAD){
+			//propagate the file list with stuff
+			String path = "saves/";
+			File f = new File(path);
+			File[] files = f.listFiles();
+			
+			fileList.clear();
+			for(String s : f.list()){
+				fileList.add(s);
+			}
+			
+		} else {
+			fileList.clear();
+			fileList.add("ENTER FILENAME");
+		}
+		
+		
+	}
+
 	private void charTyped(int cCode){
 	
 		//get current line
@@ -545,7 +668,7 @@ public class CodePanel {
 	private void insertSnippet(int i) {
 		// TODO Auto-generated method stub
 		if(lines.get(cursorY).immutable) return;
-		String[] toInsert = snippets[i].split("\r");
+		String[] toInsert = snippets[i].split("/n");
 		System.out.println(toInsert);
 		synchronized (lock) {
 			if(i >= 0 && i <snippets.length){
@@ -556,18 +679,23 @@ public class CodePanel {
 				}
 				for(int p = toInsert.length - 1; p >= 0; p--){
 					
-				
+					System.out.println(toInsert[p]);
 					lines.add(cursorY, new CodeLine(s + toInsert[p]));
 				}
 				cursorX = lines.get(cursorY).data.length();
 			}
-			snippetMode = false;
+			editorMode = EditorMode.MODE_EDIT;
 			
 		}
 	}
 
 	public enum CompileState {
 		STATE_COMPILED, STATE_DIRTY, STATE_ERROR
+	}
+	
+	public enum EditorMode {
+		MODE_EDIT, MODE_SNIPPET, MODE_LOAD, MODE_SAVE
+		
 	}
 	
 	public class CodeLine {

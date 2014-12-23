@@ -116,9 +116,9 @@ public class LiveCrud extends PApplet implements KeyListener{
 		hint(PApplet.ENABLE_DEPTH_TEST);
 
 		if(currentDisplay != null){
-			//try{
+			try{
 				currentDisplay.preDraw();
-			//} catch (Exception e){}
+			} catch (Exception e){}
 		}
 		//resetMatrix();
 		camera(width/2.0f, height/2.0f, (height/2.0f) / tan(PI*30.0f / 180.0f), width/2.0f, height/2.0f, 0.0f, 0.0f, 1.0f, 0.0f);
@@ -304,7 +304,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 
 			}
 		} catch (FuckedSourceException e){
-			System.out.println("r: " + e.row + "c: " + e.column);
+			System.out.println(e.toString());
 			cPanel[currentPanelIndex].setErrorPos((int) e.row, (int)e.column);
 			e.printStackTrace();
 		}catch (Exception e){
