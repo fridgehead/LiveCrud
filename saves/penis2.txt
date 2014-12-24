@@ -1,0 +1,8 @@
+Movie testmov;
+p
+protected void onHalfBeat(){
+ 
+}
+protected void onQuarterBeat(){
+ 
+}

@@ -28,6 +28,7 @@ public class CodePanel {
 	//boolean snippetMode = false;
 	EditorMode editorMode = EditorMode.MODE_EDIT;
 	int fileCursorPos = 0;
+	String fileName = "";
 	
 	String[] snippets;
 
@@ -129,14 +130,18 @@ public class CodePanel {
 		}
 		pGfx.text(t, 10,40);
 		pGfx.textFont(font, 15);
-		
-		int py = 0;
-		for(String s : fileList){
-			pGfx.text(s, 20, 90 + py);
-			py+= 20;
+		if(editorMode == EditorMode.MODE_LOAD){
+			int py = 0;
+			for(String s : fileList){
+				pGfx.text(s, 20, 90 + py);
+				py+= 20;
+			}
+			pGfx.fill(255,255,0,128);
+			pGfx.rect(0,fileCursorPos * 20 + 70, 200, 20);
+		} else {
+			pGfx.textFont(font, 20);
+			pGfx.text("FILENAME: " + fileName + "_", 100, 200);
 		}
-		pGfx.fill(255,255,0,128);
-		pGfx.rect(0,fileCursorPos * 20 + 70, 200, 20);
 		pGfx.popMatrix();
 		
 		pGfx.endDraw();
@@ -359,13 +364,27 @@ public class CodePanel {
 	}
 
 	private void keyboardEnter(KeyEvent k) {
-		if(k.getModifiers() == 2){			//ctrl+enter compiles and runs this panel
-											//unless the comple result isnt null and page isnt dirty
-			if(compileResult != null && state == CompileState.STATE_COMPILED){
-				//run the previously compiled object
-				parent.switchToDisplay(compileResult, panelId);
-			} else {
-				DrawableClass res = parent.compileAndRun(lines,panelId);
+		if(editorMode == EditorMode.MODE_EDIT){
+		
+			if(k.getModifiers() == 2){			//ctrl+enter compiles and runs this panel
+												//unless the comple result isnt null and page isnt dirty
+				if(compileResult != null && state == CompileState.STATE_COMPILED){
+					//run the previously compiled object
+					parent.switchToDisplay(compileResult, panelId);
+				} else {
+					DrawableClass res = parent.compileAndRun(lines,panelId);
+					if(res != null){
+						state = CompileState.STATE_COMPILED;
+						compileResult = res;
+						errorRow = -1;
+						errorCol = -1;
+					} else {
+						state = CompileState.STATE_ERROR;
+						
+					}
+				}
+			} else if (k.getModifiers() == 1){ 	//shift + enter compiles but does not run the panel
+				DrawableClass res = parent.compile(lines);
 				if(res != null){
 					state = CompileState.STATE_COMPILED;
 					compileResult = res;
@@ -373,22 +392,42 @@ public class CodePanel {
 					errorCol = -1;
 				} else {
 					state = CompileState.STATE_ERROR;
-					
 				}
-			}
-		} else if (k.getModifiers() == 1){ 	//shift + enter compiles but does not run the panel
-			DrawableClass res = parent.compile(lines);
-			if(res != null){
-				state = CompileState.STATE_COMPILED;
-				compileResult = res;
-				errorRow = -1;
-				errorCol = -1;
 			} else {
-				state = CompileState.STATE_ERROR;
+				newLine();
 			}
-		} else {
-			newLine();
+		} else if (editorMode == EditorMode.MODE_LOAD){
+			loadFile(fileList.get(fileCursorPos));
+			
+		} else if (editorMode == EditorMode.MODE_SAVE){
+			saveFile(fileName);
 		}
+	}
+
+	private void loadFile(String string) {
+		String[] data = parent.loadStrings("saves/" + string);
+		if(data != null){
+			lines.clear();
+			for(String s :data){
+				lines.add(new CodeLine(s));
+				
+			}
+			editorMode = EditorMode.MODE_EDIT;
+			state = CompileState.STATE_DIRTY;
+		}
+		
+	}
+	
+	private void saveFile(String name){
+		//save the current set to a text file
+		String[] data = new String[ lines.size()];
+		
+		for(int i = 0; i < data.length; i++){
+			data[i] = lines.get(i).toString();
+		}
+	
+		parent.saveStrings("saves/" + name, data);
+		editorMode = EditorMode.MODE_EDIT;
 	}
 
 	/* trollololol*/
@@ -517,36 +556,44 @@ public class CodePanel {
 		}
 	}
 	private void backspaceChar() {
-		synchronized (lock) {
-
-
-			CodeLine l = lines.get(cursorY);
-			if(l.immutable){
-				return;
-			}
-			if(cursorX > 0){
-
-//				if(cursorX-1 > 0){
-					l.backSpace();
-//				}
-			} else {
-				//backspace to end of prev line
-				synchronized (lock) {
-					
-				
-					CodeLine oldLine = lines.get(cursorY);
-					
-					cursorY --;
-					if(cursorY >= 0) {
-						lines.get(cursorY).append(oldLine);
-						lines.remove(cursorY + 1);
-						cursorX ++;
+		
+		if(editorMode == EditorMode.MODE_EDIT){
+			synchronized (lock) {
+	
+	
+				CodeLine l = lines.get(cursorY);
+				if(l.immutable){
+					return;
+				}
+				if(cursorX > 0){
+	
+	//				if(cursorX-1 > 0){
+						l.backSpace();
+	//				}
+				} else {
+					//backspace to end of prev line
+					synchronized (lock) {
 						
+					
+						CodeLine oldLine = lines.get(cursorY);
+						
+						cursorY --;
+						if(cursorY >= 0) {
+							lines.get(cursorY).append(oldLine);
+							lines.remove(cursorY + 1);
+							cursorX ++;
+							
+						}
 					}
 				}
 			}
+			state = CompileState.STATE_DIRTY;
+		} else if (editorMode == EditorMode.MODE_SAVE){
+			if(fileName.length() > 0){
+				fileName = fileName.substring(0,fileName.length() - 1);
+			}
+		
 		}
-		state = CompileState.STATE_DIRTY;
 	}
 
 	private void deleteLine(){
@@ -638,15 +685,18 @@ public class CodePanel {
 	}
 
 	private void charTyped(int cCode){
-	
-		//get current line
-		synchronized(lock){
-			CodeLine l = lines.get(cursorY);
-			if(l.immutable) return;
-			l.insert(cursorX, (char)cCode);
-			cursorX++;
-			state = CompileState.STATE_DIRTY;
-			
+		if(editorMode == EditorMode.MODE_EDIT){
+			//get current line
+			synchronized(lock){
+				CodeLine l = lines.get(cursorY);
+				if(l.immutable) return;
+				l.insert(cursorX, (char)cCode);
+				cursorX++;
+				state = CompileState.STATE_DIRTY;
+				
+			}
+		} else {
+			fileName += (char)cCode;
 		}
 	
 	}
@@ -709,7 +759,6 @@ public class CodePanel {
 		}
 		
 		public void backSpace() {
-			
 			if(data.length() > 0){
 				
 					if(cursorX - 1 < data.length()){
@@ -720,7 +769,7 @@ public class CodePanel {
 					tabStart = cursorX;
 				}
 			}
-			
+		
 			
 		}
 

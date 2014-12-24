@@ -161,28 +161,32 @@ public class LiveCrud extends PApplet implements KeyListener{
 		if(beatCounter - millis() < 0){
 			beatCounter = millis() + beatDelay;
 			rect(width-20,0, 8,20);
-
-			if(currentDisplay != null){
-				currentDisplay.onBeat();
-			}
+			try { 
+				if(currentDisplay != null){
+					currentDisplay.onBeat();
+				}
+			} catch (Exception e){}
 
 		}
 		if(beatHalfCounter - millis() < 0){
 			beatHalfCounter = millis() + beatDelay / 2;
 			rect(width-12,0, 8,20);
-
-			if(currentDisplay != null){
-				currentDisplay.onHalfBeat();
-			}
+			try{
+				if(currentDisplay != null){
+					currentDisplay.onHalfBeat();
+				}
+			} catch (Exception e){}
+			
 
 		}
 		if(beatQuarterCounter - millis() < 0){
 			beatQuarterCounter = millis() + beatDelay / 4;
 			rect(width-4,0, 8,20);
-
-			if(currentDisplay != null){
-				currentDisplay.onQuarterBeat();
-			}
+			try{
+				if(currentDisplay != null){
+					currentDisplay.onQuarterBeat();
+				}
+			} catch (Exception e){}
 
 		}
 

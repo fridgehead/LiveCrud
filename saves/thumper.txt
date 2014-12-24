@@ -1,0 +1,71 @@
+PVector[] pList = new PVector[100];
+Tri[] tris = new Tri[100];
+
+float dec = 10f; 
+ 
+protected void setup(){
+for(int i = 0; i < 100; i++){
+   pList[i] = new PVector(-500 + i*10,i,0); 
+
+   Tri t = new Tri();
+   t.a = new PVector(p.random(-500,500), p.random(-500, 500), p.random(-500,500)); 
+   t.b = new PVector(p.random(-500, 500), p.random(-500, 500), p.random(-500, 500)); 
+   t.c = new PVector(p.random(-500, 500), p.random(-500, 500), p.random(-500, 500));
+   
+   tris[i] = t; 
+}
+ 
+}
+protected void draw(){
+   p.centre();
+   p.translate(0,0,-1000); 
+    p.rotateY(p.frameCount * 0.01f); 
+   p.rotateX(-0.9f + p.frameCount * dec * 0.000001f);
+   p.noStroke(); 
+    p.fill(255,255,255,20);
+    p.scale (0.5f+dec *0.2f);
+    for(int i = 0; i < 100; i++){
+      p.beginShape(p.TRIANGLE_STRIP);
+      p.vertex(tris[i].a.x, tris[i].a.y, tris[i].a.z); 
+      p.vertex(tris[i].b.x, tris[i].b.y, tris[i].b.z); 
+      p.vertex(tris[i].c.x, tris[i].c.y, tris[i].c.z);
+      p.endShape(p.CLOSE); 
+   }
+      dec -= 0.1f;
+} 
+
+protected void sinWave(int offset){
+   for(int i = 0; i < 100; i++){
+       p.pushMatrix();
+      float f = p.sin(p.frameCount * 0.1f + i/10f + offset)*55;  
+      p.translate(pList[i]);
+
+      p.translate(0, -f, 0); 
+      p.fill(255 - f*2   );
+      p.box(10);  
+      
+      p.popMatrix();
+       
+       
+   }
+    
+}
+
+public class Tri {
+   public PVector a;
+   public PVector b;
+   public PVector c; 
+} 
+    
+protected void numpadKey(int key){
+ 
+}
+protected void onBeat(){
+   dec = 10f; 
+}
+protected void onHalfBeat(){
+ 
+}
+protected void onQuarterBeat(){
+ 
+}

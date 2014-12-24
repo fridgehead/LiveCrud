@@ -1,0 +1,34 @@
+PVector[] pList = new PVector[100];
+
+protected void setup(){
+for(int i = 0; i < 100; i++){
+   pList[i] = new PVector(-500 + i*10,0,0); 
+}
+ 
+}
+protected void draw(){
+   p.centre(); 
+   for(int i = 0; i < 100; i++){
+      p.pushMatrix();
+      p.translate(pList[i]);
+      p.translate(0, p.sin(p.frameCount * 0.1f + i/10f)*55, 0);  
+      p.box(10);  
+      
+      p.popMatrix();
+       
+       
+   }
+    
+}
+protected void numpadKey(int key){
+ 
+}
+protected void onBeat(){
+ 
+}
+protected void onHalfBeat(){
+ 
+}
+protected void onQuarterBeat(){
+ 
+}
