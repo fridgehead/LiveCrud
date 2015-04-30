@@ -1,0 +1,28 @@
+PVector[] a = makeVectorGrid(10,10,10);
+ 
+protected void setup(){
+
+    
+}
+protected void draw(){
+  
+p.centre();
+for(PVector pa : p){
+	p.pushMatrix();
+	p.translate(pa);
+	p.box(10);
+	p.popMatrix();
+} 
+}
+protected void numpadKey(int key){
+ 
+}
+protected void onBeat(){
+ 
+}
+protected void onHalfBeat(){
+ 
+}
+protected void onQuarterBeat(){
+ 
+}

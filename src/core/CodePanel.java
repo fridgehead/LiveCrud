@@ -48,7 +48,7 @@ public class CodePanel {
 	PFont font; 	
 	Object lock = new Object();
 	PGraphics pGfx;
-	private int panelId;
+	protected int panelId;
 	private int errorRow = -1;
 	private int errorCol = -1;
 	
@@ -109,7 +109,7 @@ public class CodePanel {
 	public void draw(){
 		if(editorMode == EditorMode.MODE_EDIT || editorMode == EditorMode.MODE_SNIPPET){
 			drawTextEditor();
-		} else if (editorMode == EditorMode.MODE_LOAD || editorMode == EditorMode.MODE_SAVE){
+		} else if (editorMode == EditorMode.MODE_LOAD || editorMode == EditorMode.MODE_SAVE || editorMode == EditorMode.MODE_LOADINSERT){
 			drawFileDialog();
 		}
 	}
@@ -120,17 +120,19 @@ public class CodePanel {
 		pGfx.background(0,0,0,0);
 		pGfx.fill(255);
 		pGfx.noStroke();
-		pGfx.pushMatrix();
+		pGfx.pushMatrix();				//--text pushmatrix
 		pGfx.textFont(font, 25);
 		pGfx.scale(1);
 
 		String t = "LOAD";
 		if(editorMode == EditorMode.MODE_SAVE){
 			t = "SAVE";
+		} else if (editorMode == EditorMode.MODE_LOADINSERT){
+			t = "INSERT";
 		}
 		pGfx.text(t, 10,40);
 		pGfx.textFont(font, 15);
-		if(editorMode == EditorMode.MODE_LOAD){
+		if(editorMode == EditorMode.MODE_LOAD || editorMode == EditorMode.MODE_LOADINSERT){
 			int py = 0;
 			for(String s : fileList){
 				pGfx.text(s, 20, 90 + py);
@@ -142,7 +144,7 @@ public class CodePanel {
 			pGfx.textFont(font, 20);
 			pGfx.text("FILENAME: " + fileName + "_", 100, 200);
 		}
-		pGfx.popMatrix();
+		pGfx.popMatrix();			//--text popMatrix
 		
 		pGfx.endDraw();
 		parent.hint(PApplet.DISABLE_DEPTH_TEST);
@@ -150,7 +152,7 @@ public class CodePanel {
 		parent.image(pGfx, 0, 0);
 	}
 
-	private void drawTextEditor() {
+	protected void drawTextEditor() {
 
 		if(parent.width  != sizeX && parent.height != sizeY){
 			resize();
@@ -160,7 +162,7 @@ public class CodePanel {
 		pGfx.fill(255);
 		pGfx.noStroke();
 		pGfx.textFont(font, 15);
-		pGfx.pushMatrix();
+		pGfx.pushMatrix();											//--PUSH
 		if(codeHeight > parent.height - 300){
 			codeHeight = parent.height-300;
 			
@@ -232,7 +234,7 @@ public class CodePanel {
 		pGfx.noStroke();
 		pGfx.rect(cursorX * charWidth + 20, cursorY * 20 + 23, charWidth, 20);
 		
-		
+	
 		//draw snippet
 		if(editorMode == EditorMode.MODE_SNIPPET){
 			pGfx.fill(150,150,150,200);
@@ -248,7 +250,7 @@ public class CodePanel {
 
 		}
 		
-		pGfx.popMatrix();
+		pGfx.popMatrix();									//--POP
 		pGfx.endDraw();
 		
 		parent.hint(PApplet.DISABLE_DEPTH_TEST);
@@ -267,7 +269,7 @@ public class CodePanel {
 	}
 	
 	public void keyPressed(KeyEvent k){
-		
+		//System.out.println(" mod " + k.getModifiers());
 		int cCode = k.getKeyCode();
 		//System.out.println("c: " + cCode);
 		if(cCode == KeyEvent.VK_UP){		//up
@@ -300,7 +302,11 @@ public class CodePanel {
 			System.out.println("take a load : " + panelId);
 			
 			startFileDialog(EditorMode.MODE_LOAD);
+		} else if (cCode == KeyEvent.VK_L && k.getModifiers() == 3){ 	//load
+			System.out.println("insert file");
 			
+			startFileDialog(EditorMode.MODE_LOADINSERT);
+				
 		} else {
 			
 				charTyped(k);
@@ -331,7 +337,7 @@ public class CodePanel {
 		}
 	}
 
-	private void deleteChar() {
+	protected void deleteChar() {
 		if(lines.get(cursorY).immutable == true){
 			return;
 		}
@@ -350,7 +356,7 @@ public class CodePanel {
 		
 	}
 
-	private void deleteToStartOfLine() {
+	protected void deleteToStartOfLine() {
 		if(cursorX > 0){
 			CodeLine s = lines.get(cursorY);
 			if(s.immutable == true){
@@ -363,7 +369,7 @@ public class CodePanel {
 		}
 	}
 
-	private void keyboardEnter(KeyEvent k) {
+	protected void keyboardEnter(KeyEvent k) {
 		if(editorMode == EditorMode.MODE_EDIT){
 		
 			if(k.getModifiers() == 2){			//ctrl+enter compiles and runs this panel
@@ -401,9 +407,25 @@ public class CodePanel {
 			
 		} else if (editorMode == EditorMode.MODE_SAVE){
 			saveFile(fileName);
+		} else if (editorMode == EditorMode.MODE_LOADINSERT){
+			insertFile(fileList.get(fileCursorPos));
 		}
 	}
 
+	private void insertFile(String name){
+		String[] data = parent.loadStrings("saves/" + name);
+		if(data != null){
+			int ct =0;
+			for(String s :data){
+				lines.add(cursorY + ct, new CodeLine(s));
+				ct ++;
+			}
+			editorMode = EditorMode.MODE_EDIT;
+			state = CompileState.STATE_DIRTY;
+		}
+		
+	}
+	
 	private void loadFile(String string) {
 		String[] data = parent.loadStrings("saves/" + string);
 		if(data != null){
@@ -431,7 +453,7 @@ public class CodePanel {
 	}
 
 	/* trollololol*/
-	private void newTab() {
+	protected void newTab() {
 		lines.get(cursorY).newTab();
 
 		state = CompileState.STATE_DIRTY;
@@ -464,7 +486,7 @@ public class CodePanel {
 
 	}
 
-	private void moveUp() {
+	protected void moveUp() {
 		if(editorMode == EditorMode.MODE_EDIT){
 			cursorY -= 1;
 			if (cursorY < 0){
@@ -487,7 +509,7 @@ public class CodePanel {
 			
 	}
 
-	private void moveRight(int mod) {
+	protected void moveRight(int mod) {
 		if(mod == 2){
 			//find next ' ' in string
 			String t = lines.get(cursorY).data.toString().substring(cursorX+1);
@@ -508,7 +530,7 @@ public class CodePanel {
 		}
 	}
 
-	private void moveDown() {
+	protected void moveDown() {
 		if(editorMode == EditorMode.MODE_EDIT){
 	
 			cursorY ++;
@@ -533,7 +555,7 @@ public class CodePanel {
 		
 	}
 
-	private void moveLeft(int mod) {
+	protected void moveLeft(int mod) {
 		if(mod == 2){
 			//cursorX = 0;
 			//find next ' ' in string
@@ -555,7 +577,7 @@ public class CodePanel {
 			}
 		}
 	}
-	private void backspaceChar() {
+	protected void backspaceChar() {
 		
 		if(editorMode == EditorMode.MODE_EDIT){
 			synchronized (lock) {
@@ -596,7 +618,7 @@ public class CodePanel {
 		}
 	}
 
-	private void deleteLine(){
+	protected void deleteLine(){
 		synchronized (lock) {
 
 
@@ -629,12 +651,12 @@ public class CodePanel {
 				block != Character.UnicodeBlock.SPECIALS;
 	}
 
-	private void charTyped(KeyEvent e) {
+	protected void charTyped(KeyEvent e) {
 		int cCode = e.getKeyCode();
 		
 		//System.out.println("code: "  + cCode);
 		
-		if(e.getModifiers() == 1 && cCode == 32){
+		if(e.getModifiers() == 2 && cCode == KeyEvent.VK_I){
 			System.out.println("sni");
 			editorMode = EditorMode.MODE_SNIPPET;
 		} else if (cCode == KeyEvent.VK_ESCAPE){
@@ -662,10 +684,10 @@ public class CodePanel {
 		}
 	} 
 	
-	private void startFileDialog(EditorMode newMode) {
+	protected void startFileDialog(EditorMode newMode) {
 		// TODO Auto-generated method stub
 		editorMode = newMode;
-		if(editorMode == EditorMode.MODE_LOAD){
+		if(editorMode == EditorMode.MODE_LOAD || editorMode == EditorMode.MODE_LOADINSERT){
 			//propagate the file list with stuff
 			String path = "saves/";
 			File f = new File(path);
@@ -701,14 +723,14 @@ public class CodePanel {
 	
 	}
 
-	private void pasteLine() {
+	protected void pasteLine() {
 		if(lines.get(cursorY).immutable) return;
 		if(clipboard != null){
 			lines.add(cursorY, new CodeLine(clipboard.toString()) );
 		}
 	}
 
-	private void copyLine() {
+	protected void copyLine() {
 		if(lines.get(cursorY).immutable) return;
 		clipboard = lines.get(cursorY).data;
 		
@@ -744,7 +766,7 @@ public class CodePanel {
 	}
 	
 	public enum EditorMode {
-		MODE_EDIT, MODE_SNIPPET, MODE_LOAD, MODE_SAVE
+		MODE_EDIT, MODE_SNIPPET, MODE_LOAD, MODE_SAVE, MODE_LOADINSERT
 		
 	}
 	
@@ -800,6 +822,10 @@ public class CodePanel {
 			data.insert(cursorX,  cCode);
 			
 		}
+		public void insert(int cursorX, String c) {
+			// TODO Auto-generated method stub
+			data.insert(cursorX, c);
+		}
 		public String substring(int cursorX) {
 			
 			return data.substring(cursorX);
@@ -836,6 +862,7 @@ public class CodePanel {
 		public String toString(){
 			return data.toString();
 		}
+
 	}
 	
 	

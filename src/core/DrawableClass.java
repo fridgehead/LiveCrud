@@ -2,12 +2,13 @@ package core;
 import damkjer.ocd.Camera;
 import ddf.minim.analysis.FFT;
 import de.voidplus.leapmotion.LeapMotion;
+import processing.core.PApplet;
+import processing.opengl.*;
 
 
-public abstract class DrawableClass {
+public abstract class DrawableClass extends DrawableBase{
 	boolean ready = false;
-	protected LiveCrud p;
-	protected FFT fft;
+	protected FFT fft; 
 	protected Camera camera;
 	
 	protected LeapMotion leap;
@@ -17,7 +18,9 @@ public abstract class DrawableClass {
 	public void preDraw(){
 		if(ready){
 			draw();
+			p.colorMode(PApplet.RGB);
 		}
+		
 	}
 	
 	protected abstract void setup();

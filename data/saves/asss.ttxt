@@ -1,0 +1,18 @@
+protected void setup(){
+ 
+}
+protected void draw(){
+ 
+}
+protected void numpadKey(int key){
+ 
+}
+protected void onBeat(){
+ 
+}
+protected void onHalfBeat(){
+ 
+}
+protected void onQuarterBeat(){
+ 
+}

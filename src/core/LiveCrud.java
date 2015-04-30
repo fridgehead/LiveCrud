@@ -87,7 +87,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 		frame.setSize(sx,sy);
 		testComp = new LiveCompiler();
 		for(int i = 0; i < cPanel.length; i++){
-			cPanel[i] = new CodePanel(this, i);
+			cPanel[i] = new VimCodePanel(this, i);
 		}
 
 		audio = new Minim(this);
@@ -115,6 +115,7 @@ public class LiveCrud extends PApplet implements KeyListener{
 		background(0);
 		hint(PApplet.ENABLE_DEPTH_TEST);
 
+		//draw the currently running code
 		if(currentDisplay != null){
 			try{
 				currentDisplay.preDraw();
@@ -227,11 +228,11 @@ public class LiveCrud extends PApplet implements KeyListener{
 		rect(2, mouseY - 20, 5,40);
 		text(mouseY, 15, mouseY);
 		rect(mouseX - 20, 960, 40, 5);
-		pushMatrix();
+		pushMatrix("mouse");
 		translate(mouseX, 960);
 		rotate(radians(-45));
 		text(mouseY, 5,0);
-		popMatrix();
+		popMatrix("mouse");
 		
 		
 		if(switchAtNextFrame && nextDisplay != null){
@@ -255,7 +256,19 @@ public class LiveCrud extends PApplet implements KeyListener{
 //		});
 	}
 	
+	public void pushMatrix(){
+		super.pushMatrix();
+	}
+	public void pushMatrix(String tag){
+		super.pushMatrix();
+	}
 	
+	public void popMatrix(){
+		super.popMatrix();
+	}
+	public void popMatrix(String tag){
+		super.popMatrix();
+	}
 	
 	@Override
 	public void keyPressed(KeyEvent k){
@@ -324,6 +337,14 @@ public class LiveCrud extends PApplet implements KeyListener{
 
 		switchToDisplay(d, panelId);
 		return d;
+	}
+	
+	public void enableDisplay(DrawableClass d, int id){
+		
+	}
+	
+	public void disableDisplay(DrawableClass d, int id){
+		
 	}
 
 	public void switchToDisplay(DrawableClass d, int id){
