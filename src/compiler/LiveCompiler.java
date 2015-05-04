@@ -30,10 +30,18 @@ public class LiveCompiler{
 	public Object compile(StringBuilder  s) throws InstantiationException, IllegalAccessException, ClassNotFoundException, FuckedSourceException{
 		String fullName = "DynClass";
 		//whilst scanning the strings look for an odd number of pushmatrix and popmatrix strings. Fail if they arent even
-		int pushCount = findCounts("p.pushMatrix()", s.toString());
-		int popCount = findCounts("p.popMatrix()", s.toString());
+		int pushCount = findCounts("pushMatrix()", s.toString());
+		int popCount = findCounts("popMatrix()", s.toString());
 		if(pushCount != popCount){
 			System.out.println("push and pop dont match");
+			return null;
+		}
+		
+		//do the same for begindraw/enddraw
+		int beginCount = findCounts("beginDraw()", s.toString());
+		int endCount = findCounts("endDraw()", s.toString());
+		if(beginCount != endCount){
+			System.out.println("begin/end dont match - this will break");
 			return null;
 		}
 		

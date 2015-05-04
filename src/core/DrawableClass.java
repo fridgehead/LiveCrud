@@ -8,11 +8,9 @@ import processing.opengl.*;
 
 public abstract class DrawableClass extends DrawableBase{
 	boolean ready = false;
-	protected FFT fft; 
 	protected Camera camera;
 	
-	protected LeapMotion leap;
-	
+
 	protected abstract void draw();
 	//called by main loop, only call draw if p has been set
 	public void preDraw(){
@@ -40,7 +38,6 @@ public abstract class DrawableClass extends DrawableBase{
 		this.p = p;
 		this.fft = p.fft;
 		this.camera = new Camera(p);
-		leap = p.leap;
 		ready = true;
 		setup();
 	}

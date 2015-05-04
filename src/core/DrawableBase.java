@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.Image;
 import java.awt.image.ImageProducer;
 
+import ddf.minim.analysis.FFT;
 import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PGraphics;
@@ -23,8 +24,24 @@ import processing.opengl.PShader;
  * yes its horrible BUT I DONT CARE
  * */
 public class DrawableBase {
+	
 	protected LiveCrud p;
 
+	/* useful things to speed up coding */
+	protected FFT fft; 
+	protected PGraphics buffer;
+	
+	PFont font;
+
+	
+	public PFont getFont(){
+		if(font == null){
+			font = p.loadFont("BitstreamVeraSansMono-Bold-48.vlw");
+			
+		}
+		return font;
+	}
+	
 	public void centre() {
 		p.centre();
 	}
@@ -43,6 +60,30 @@ public class DrawableBase {
 			
 		}
 		return ret;
+	}
+	
+	public PVector[] makeVectorSphere(int ct, float size){
+		PVector[] ret = new PVector[ct];
+		for(int i = 0; i < ct; i++){
+			ret[i] = PVector.mult(PVector.random3D(), size);
+			
+			
+		}
+		return ret;
+	}
+	
+	public float getFft(int band){
+		return fft.getBand(band);
+	}
+	
+	
+	//delegates
+	
+	public float sin(float v){
+		return PApplet.sin(v);
+	}
+	public float cos(float v){
+		return PApplet.cos(v);
 	}
 	
 	public void translate(float x, float y, float z) {

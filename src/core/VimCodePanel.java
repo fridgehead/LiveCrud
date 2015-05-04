@@ -22,6 +22,9 @@ public class VimCodePanel extends CodePanel {
 	ArrayList<KeyEvent> commandBuffer = new ArrayList<KeyEvent>();
 	
 	TextMode editorMode = TextMode.EDITOR_COMMAND;
+	
+	int commandRepetitions = 1;
+
 
 	public VimCodePanel(LiveCrud parent, int panelId){
 		super(parent, panelId);
@@ -67,18 +70,24 @@ public class VimCodePanel extends CodePanel {
 		int cCode = k.getKeyCode();
 	
 		if(editorMode == TextMode.EDITOR_COMMAND){
-			commandBuffer.add(k);
-			checkBuffer();
+			//only add printable chars to the command buffer
+			
+			
+			if(k.getKeyChar() != KeyEvent.CHAR_UNDEFINED){
+				commandBuffer.add(k);
+				checkBuffer();
+			}
 			if (cCode == KeyEvent.VK_S && k.getModifiers() == 2){ 	//save
 				System.out.println("jesus saves tab number : " + panelId);
+				editorMode = TextMode.EDITOR_EDIT;
 				startFileDialog(EditorMode.MODE_SAVE);
 			} else if (cCode == KeyEvent.VK_L && k.getModifiers() == 2){ 	//load
 				System.out.println("take a load : " + panelId);
-				
+
 				startFileDialog(EditorMode.MODE_LOAD);
 			} else if (cCode == KeyEvent.VK_L && k.getModifiers() == 3){ 	//load
 				System.out.println("insert file");
-				
+
 				startFileDialog(EditorMode.MODE_LOADINSERT);
 			} else if (cCode == KeyEvent.VK_ESCAPE){
 					editorMode = TextMode.EDITOR_COMMAND;	
@@ -112,9 +121,24 @@ public class VimCodePanel extends CodePanel {
 
 	private void checkBuffer() {
 		int removeChar = 1;
-		boolean consumeChars = true;
 		KeyEvent k = commandBuffer.get(0);
+		
 		char cCode = (char) k.getKeyCode();
+		
+		//check for repetitions
+		if(cCode >= KeyEvent.VK_0 && cCode <= KeyEvent.VK_9 && commandRepetitions == 1 ){
+			commandRepetitions = cCode - 48;
+			commandBuffer.subList(0, 0).clear();
+
+			
+		}
+		
+		for(int i = 0; i < commandBuffer.size(); i++){
+			System.out.print(commandBuffer.get(i).getKeyChar());
+		}
+		System.out.println("");
+		
+		
 		if(cCode == KeyEvent.VK_ESCAPE){
 			editorMode = TextMode.EDITOR_COMMAND;
 			commandBuffer.clear();
@@ -134,9 +158,14 @@ public class VimCodePanel extends CodePanel {
 //			} else if (k.getModifiers() == 2){	//ctrl backspace to delete from cursorX back to 0
 //				deleteToStartOfLine();
 //			} else {
-			lines.get(cursorY).delete(cursorX, cursorX + 1);
+			for (int i = 0; i < commandRepetitions; i++){
+				lines.get(cursorY).delete(cursorX, cursorX + 1);
+			}
+			commandRepetitions = 1;
 		} else if (cCode == KeyEvent.VK_A){
-			
+			if(k.getModifiers() == 1){
+				cursorX = lines.get(cursorY).length();
+			}
 			cursorX++;
 			if(cursorX > lines.get(cursorY).length()){
 				lines.get(cursorY).data.append(" ");
@@ -164,7 +193,6 @@ public class VimCodePanel extends CodePanel {
 			
 			char nextChar = '\0';
 			if(commandBuffer.size() < 2){
-				consumeChars = false;
 				removeChar = 0;
 			} else {
 				KeyEvent nextEvent = commandBuffer.get(1);
@@ -172,12 +200,21 @@ public class VimCodePanel extends CodePanel {
 				switch (nextChar){
 				case KeyEvent.VK_D:
 					//delete line
-					deleteLine();
+					for(int i = 0; i < commandRepetitions; i++){
+						deleteLine();
+					}
+					commandRepetitions = 1;
 					removeChar = 2;
 					break;
 				case KeyEvent.VK_W:
 					//delete upto next word boundary
-					lines.get(cursorY).delete(cursorX, cursorX + findWordBound());
+					for(int i = 0 ; i < commandRepetitions; i++){
+						lines.get(cursorY).delete(cursorX, cursorX + findWordBound());
+					}
+					commandRepetitions = 1;
+					removeChar = 2;
+					break;
+				default:
 					removeChar = 2;
 					break;
 				}
@@ -190,7 +227,6 @@ public class VimCodePanel extends CodePanel {
 			
 			char nextChar = '\0';
 			if(commandBuffer.size() < 2){
-				consumeChars = false;
 				removeChar = 0;
 			} else {
 				KeyEvent nextEvent = commandBuffer.get(1);
@@ -201,12 +237,14 @@ public class VimCodePanel extends CodePanel {
 					copyLine();
 					removeChar = 2;
 					break;
+				default:
+					removeChar = 2;
+					break;
 				}
 			}
 		} else if ( cCode == KeyEvent.VK_R){
-			char nextChar = '\0';
 			if(commandBuffer.size() < 2){
-				consumeChars = false;
+				
 				removeChar = 0;
 			} else {
 				KeyEvent nextEvent = commandBuffer.get(1);
@@ -221,7 +259,6 @@ public class VimCodePanel extends CodePanel {
 			
 			char nextChar = '\0';
 			if(commandBuffer.size() < 2){
-				consumeChars = false;
 				removeChar = 0;
 			} else {
 				KeyEvent nextEvent = commandBuffer.get(1);
@@ -229,18 +266,52 @@ public class VimCodePanel extends CodePanel {
 				switch (nextChar){
 				case KeyEvent.VK_W:
 					//delete line
-					lines.get(cursorY).delete(cursorX, cursorX + findWordBound());
+					for (int i = 0; i < commandRepetitions; i++){
+						lines.get(cursorY).delete(cursorX, cursorX + findWordBound());
+					}
+					commandRepetitions = 1;
 					editorMode = TextMode.EDITOR_EDIT;
+					removeChar = 2;
+					break;
+				default: 
 					removeChar = 2;
 					break;
 				}
 			}
+		} else if (cCode == 52){	//dollar
+			removeChar = 1;
+			cursorX = lines.get(cursorY).length() ;
+		} else if (cCode == 54){	//caret
+			removeChar = 1;
+			cursorX = 0;
+		} else if (cCode == 53){ //%
+			
+			cursorX = findNextBracket(cursorX);
 		}
 		
 		commandBuffer.subList(0, removeChar).clear();
 		
 	}
 	
+	private int findNextBracket(int curX) {
+		return curX; /*
+		String line = lines.get(cursorY).getString();
+		char curChar = line.charAt(curX);		
+		char[][] valChars = { 	{'(', ')'},
+								{'[', ']'},
+								{'{', '}'}
+		};
+		int 
+		if(valChars.contains("" + curChar)){
+			//search time!
+			//search each line for 
+			return 1;
+		} else {
+			return curX;
+		}
+		*/
+	}
+
 	private void insertPrevLine() {
 		// TODO Auto-generated method stub
 		CodeLine l = new CodeLine(" ");

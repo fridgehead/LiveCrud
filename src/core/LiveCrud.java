@@ -118,7 +118,11 @@ public class LiveCrud extends PApplet implements KeyListener{
 		//draw the currently running code
 		if(currentDisplay != null){
 			try{
+				pushStyle();
+				pushMatrix();
 				currentDisplay.preDraw();
+				popStyle();
+				popMatrix();
 			} catch (Exception e){}
 		}
 		//resetMatrix();
